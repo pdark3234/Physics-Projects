@@ -1,0 +1,1124 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     44855,       1116]
+NotebookOptionsPosition[     41713,       1053]
+NotebookOutlinePosition[     42118,       1069]
+CellTagsIndexPosition[     42075,       1066]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{"Needs", "[", "\"\<OGre`\>\"", "]"}]], "Input",
+ CellChangeTimes->{{3.955944531610922*^9, 3.9559445372885284`*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"2fec3166-0d0b-b44b-81f0-471685f4b525"],
+
+Cell[BoxData[
+ TagBox[GridBox[{
+    {
+     StyleBox[
+      TemplateBox[{"\"OGRe: An \"", 
+        StyleBox["\"O\"", Underlined, StripOnInput -> False], 
+        "\"bject-Oriented \"", 
+        StyleBox["\"G\"", Underlined, StripOnInput -> False], "\"eneral \"", 
+        StyleBox["\"Re\"", Underlined, StripOnInput -> False], 
+        "\"lativity Package for Mathematica\""},
+       "RowDefault"],
+      StripOnInput->False,
+      FontSize->Larger,
+      FontWeight->Bold]},
+    {
+     StyleBox[
+      TemplateBox[{"\"By Barak Shoshany (\"", 
+        TemplateBox[{"\"baraksh@gmail.com\"", "mailto:baraksh@gmail.com"}, 
+         "HyperlinkURL"], "\") (\"", 
+        TemplateBox[{"\"baraksh.com\"", "https://baraksh.com/"}, 
+         "HyperlinkURL"], "\")\""},
+       "RowDefault"],
+      StripOnInput->False,
+      FontWeight->Bold]},
+    {
+     StyleBox[
+      TemplateBox[{"\"v1.7.0 (2021-09-17)\""},
+       "RowDefault"],
+      StripOnInput->False,
+      FontWeight->Bold]},
+    {
+     StyleBox[
+      TemplateBox[{"\"GitHub repository: \"", 
+        TemplateBox[{
+         "\"https://github.com/bshoshany/OGRe\"", 
+          "https://github.com/bshoshany/OGRe"}, "HyperlinkURL"]},
+       "RowDefault"],
+      StripOnInput->False,
+      FontWeight->Bold]},
+    {
+     TemplateBox[{
+      "\"\[Bullet] To view the full documentation for the package, type \"", 
+       ButtonBox[
+        TagBox[
+         PaneSelectorBox[{
+          False -> StyleBox[
+            "\"TDocs[]\"", "Hyperlink", StripOnInput -> False], True -> 
+           StyleBox["\"TDocs[]\"", "HyperlinkActive", StripOnInput -> False]}, 
+          Dynamic[
+           CurrentValue["MouseOver"]], ImageSize -> Automatic, FrameMargins -> 
+          0], 
+         MouseAppearanceTag["LinkHand"]], ButtonFunction :> OGRe`TDocs[], 
+        Appearance -> "Frameless", BaseStyle -> "Hyperlink", Evaluator -> 
+        Automatic, Method -> "Preemptive"], "\".\""},
+      "RowDefault"]},
+    {
+     TemplateBox[{"\"\[Bullet] To list all available modules, type \"", 
+       ButtonBox[
+        TagBox[
+         PaneSelectorBox[{
+          False -> StyleBox[
+            "\"?OGRe`*\"", "Hyperlink", StripOnInput -> False], True -> 
+           StyleBox["\"?OGRe`*\"", "HyperlinkActive", StripOnInput -> False]}, 
+          Dynamic[
+           CurrentValue["MouseOver"]], ImageSize -> Automatic, FrameMargins -> 
+          0], 
+         MouseAppearanceTag["LinkHand"]], ButtonFunction :> 
+        OGRe`Private`OGRePrint[
+          Information["OGRe`*"]], Appearance -> "Frameless", BaseStyle -> 
+        "Hyperlink", Evaluator -> Automatic, Method -> "Preemptive"], "\".\""},
+      "RowDefault"]},
+    {
+     TemplateBox[{"\"\[Bullet] To get help on a particular module, type \"", 
+       StyleBox["\"?\"", "Input", StripOnInput -> False], 
+       "\" followed by the module name.\""},
+      "RowDefault"]},
+    {
+     TemplateBox[{"\"\[Bullet] To enable parallelization, type \"", 
+       ButtonBox[
+        TagBox[
+         PaneSelectorBox[{
+          False -> StyleBox[
+            "\"TSetParallelization[True]\"", "Hyperlink", StripOnInput -> 
+             False], True -> 
+           StyleBox[
+            "\"TSetParallelization[True]\"", "HyperlinkActive", StripOnInput -> 
+             False]}, 
+          Dynamic[
+           CurrentValue["MouseOver"]], ImageSize -> Automatic, FrameMargins -> 
+          0], 
+         MouseAppearanceTag["LinkHand"]], ButtonFunction :> 
+        OGRe`TSetParallelization[True], Appearance -> "Frameless", BaseStyle -> 
+        "Hyperlink", Evaluator -> Automatic, Method -> "Preemptive"], "\".\""},
+      "RowDefault"]},
+    {
+     TemplateBox[{"\"\[Bullet] \"", 
+       TemplateBox[{
+         DynamicBox[
+          ToBoxes[OGRe`Private`UpdateMessage, StandardForm], 
+          ImageSizeCache -> {
+           307.3408121109009, {2.6660155467689046`, 9.045409890823066}}], 
+         "\" To disable automatic checks for updates at startup, type \"", 
+         ButtonBox[
+          TagBox[
+           
+           PaneSelectorBox[{
+            False -> StyleBox[
+              "\"TSetAutoUpdates[False]\"", "Hyperlink", StripOnInput -> 
+               False], True -> 
+             StyleBox[
+              "\"TSetAutoUpdates[False]\"", "HyperlinkActive", StripOnInput -> 
+               False]}, 
+            Dynamic[
+             CurrentValue["MouseOver"]], ImageSize -> Automatic, FrameMargins -> 
+            0], 
+           MouseAppearanceTag["LinkHand"]], ButtonFunction :> 
+          OGRe`TSetAutoUpdates[False], Appearance -> "Frameless", BaseStyle -> 
+          "Hyperlink", Evaluator -> Automatic, Method -> "Preemptive"], 
+         "\".\""}, "RowDefault"]},
+      "RowDefault"]}
+   },
+   DefaultBaseStyle->"Column",
+   GridBoxAlignment->{"Columns" -> {{Left}}},
+   GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+  "Column"]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.955972396578041*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"34f58403-401b-814a-ab33-86104fbc2142"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "Needs", "nocont", 
+   "\"Context \\!\\(\\*RowBox[{\\\"\\\\\\\"OGre`\\\\\\\"\\\"}]\\) was not \
+created when Needs was evaluated.\"", 2, 1, 1, 18461151339317586072, "Local"},
+  "MessageTemplate",
+  BaseStyle->"MSG"]], "Message",
+ CellChangeTimes->{3.955944540156456*^9, 3.9559723967379684`*^9},
+ CellLabel->
+  "During evaluation of \
+In[1]:=",ExpressionUUID->"5ae96ca5-717a-2e40-afdb-164e1dff6f6e"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TNewCoordinates", "[", 
+  RowBox[{"\"\<Sph\>\"", ",", 
+   RowBox[{"{", 
+    RowBox[{"\[Theta]", ",", "\[Phi]"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9559445431055183`*^9, 3.9559445569973335`*^9}},
+ CellLabel->"In[2]:=",ExpressionUUID->"fd1594e4-880d-a643-9d64-057961b8c446"],
+
+Cell[BoxData["\<\"Sph\"\>"], "Output",
+ CellChangeTimes->{3.95594456069125*^9, 3.955972398892229*^9},
+ CellLabel->"Out[2]=",ExpressionUUID->"a515e52c-9074-ac48-a305-ae95d07df2c8"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TShow", "@", 
+  RowBox[{"TNewMetric", "[", 
+   RowBox[{"\"\<2sp\>\"", ",", "\"\<Sph\>\"", ",", 
+    RowBox[{"DiagonalMatrix", "[", 
+     RowBox[{"{", 
+      RowBox[{"1", ",", 
+       SuperscriptBox[
+        RowBox[{"Sin", "[", "\[Theta]", "]"}], "2"]}], "}"}], "]"}], 
+    ",", "\"\<g\>\""}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.9559445619739304`*^9, 3.955944613378639*^9}},
+ CellLabel->"In[3]:=",ExpressionUUID->"5491d4c1-cbd9-b642-96fe-9d0dd8456ae7"],
+
+Cell[BoxData[
+ StyleBox[
+  TemplateBox[{"\"2sp\"", "\":   \"", 
+    TemplateBox[{"\"g\"", 
+      TemplateBox[{"\"\[Mu]\"", "\"\[Nu]\""}, "RowDefault"], 
+      TemplateBox[{
+        StyleBox["\"\[Mu]\"", ShowContents -> False, StripOnInput -> False], 
+        StyleBox["\"\[Nu]\"", ShowContents -> False, StripOnInput -> False]}, 
+       "RowDefault"]}, "Subsuperscript", SyntaxForm -> SubsuperscriptBox], 
+    "\"(\"", 
+    TemplateBox[{",", "\",\"", "\[Theta]", "\[Phi]"}, "RowWithSeparators"], 
+    "\")\"", "\" = \"", 
+    TagBox[
+     RowBox[{"(", "\[NoBreak]", 
+       GridBox[{{"1", "0"}, {"0", 
+          SuperscriptBox[
+           RowBox[{"Sin", "[", "\[Theta]", "]"}], "2"]}}, RowSpacings -> 1, 
+        ColumnSpacings -> 1, RowAlignments -> Baseline, ColumnAlignments -> 
+        Center], "\[NoBreak]", ")"}], 
+     Function[BoxForm`e$, 
+      MatrixForm[BoxForm`e$]]]},
+   "RowDefault"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.9559724002434635`*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"482e8acc-21b6-d84c-b01d-c63536dddc92"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TList", "@", 
+  RowBox[{"TCalcChristoffel", "[", "\"\<2sp\>\"", "]"}]}]], "Input",
+ CellChangeTimes->{{3.955944624213396*^9, 3.9559446466218185`*^9}, {
+  3.9559725541563454`*^9, 3.955972556318426*^9}},
+ CellLabel->"In[17]:=",ExpressionUUID->"0376d646-9813-bd45-869e-018e55b7381b"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "TMessage", "WarningOverwrite", 
+   "\"Overwriting the tensor \
+\\\"\\!\\(\\*RowBox[{\\\"\\\\\\\"2spChristoffel\\\\\\\"\\\"}]\\)\\\".\"", 2, 
+   17, 3, 18461151339317586072, "Local", "OGRe`TMessage"},
+  "MessageTemplate2",
+  BaseStyle->"MSG"]], "Message",
+ CellChangeTimes->{3.955972559536108*^9},
+ CellLabel->
+  "During evaluation of \
+In[17]:=",ExpressionUUID->"bbc66c03-3124-154c-a8b7-128f44178b57"],
+
+Cell[BoxData[
+ StyleBox[
+  TagBox[GridBox[{
+     {
+      TemplateBox[{"\"2spChristoffel\"", "\":\""},
+       "RowDefault"]},
+     {
+      TagBox[GridBox[{
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[CapitalGamma]\"", 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> False],
+                 "\"\[Phi]\"", "\"\[Phi]\""}, "RowDefault"], 
+              TemplateBox[{"\"\[Theta]\"", 
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           RowBox[{"-", 
+            RowBox[{"Cos", "[", "\[Theta]", "]"}]}], " ", 
+           RowBox[{"Sin", "[", "\[Theta]", "]"}]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[CapitalGamma]\"", 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False], 
+                "\"\[Theta]\"", "\"\[Phi]\""}, "RowDefault"], 
+              TemplateBox[{"\"\[Phi]\"", 
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[CapitalGamma]\"", 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False], 
+                "\"\[Phi]\"", "\"\[Theta]\""}, "RowDefault"], 
+              TemplateBox[{"\"\[Phi]\"", 
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> 
+                 False]}, "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"Cot", "[", "\[Theta]", "]"}]}
+        },
+        AutoDelete->False,
+        GridBoxAlignment->{"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+        GridBoxItemSize->{
+         "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+       "Grid"]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+   "Column"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.955972559723665*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"2b59e5d9-7bc5-184e-8526-79179df24935"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TList", "@", 
+  RowBox[{"TNewTensor", "[", 
+   RowBox[{"\"\<E\>\"", ",", "\"\<2sp\>\"", ",", "\"\<Sph\>\"", ",", 
+    RowBox[{"{", "1", "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"\[Xi]\[Theta]", "[", 
+       RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], ",", 
+      RowBox[{"\[Xi]\[Phi]", "[", 
+       RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]}], "}"}], 
+    ",", "\"\<\[Xi]\>\""}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.9559446638692837`*^9, 3.955944680959202*^9}, {
+   3.9559447250261326`*^9, 3.9559447823483295`*^9}, {3.9559448535826187`*^9, 
+   3.955944949889759*^9}, 3.955945244657875*^9, {3.9559456278668327`*^9, 
+   3.9559456596675167`*^9}, {3.9559460615258636`*^9, 3.95594610306229*^9}, 
+   3.955956689823267*^9},
+ CellLabel->"In[5]:=",ExpressionUUID->"9fb07f85-6641-a34a-85a8-1dade742ced6"],
+
+Cell[BoxData[
+ StyleBox[
+  TagBox[GridBox[{
+     {
+      TemplateBox[{"\"E\"", "\":\""},
+       "RowDefault"]},
+     {
+      TagBox[GridBox[{
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[Xi]\"", 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> 
+                 False]}, "RowDefault"], 
+              TemplateBox[{"\"\[Theta]\""}, "RowDefault"]}, "Subsuperscript", 
+             SyntaxForm -> SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"\[Xi]\[Theta]", "[", 
+           RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[Xi]\"", 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"], 
+              TemplateBox[{"\"\[Phi]\""}, "RowDefault"]}, "Subsuperscript", 
+             SyntaxForm -> SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"\[Xi]\[Phi]", "[", 
+           RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]}
+        },
+        AutoDelete->False,
+        GridBoxAlignment->{"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+        GridBoxItemSize->{
+         "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+       "Grid"]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+   "Column"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.955972400630291*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"a65ae8fe-3c83-2f42-a544-558fb9713463"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TList", "[", 
+  RowBox[{
+   RowBox[{"TCalc", "[", 
+    RowBox[{"\"\<Killing\>\"", ",", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"TCovariantD", "[", "\"\<\[Mu]\>\"", "]"}], ".", 
+       RowBox[{"\"\<E\>\"", "[", "\"\<\[Nu]\>\"", "]"}]}], "+", 
+      RowBox[{
+       RowBox[{"TCovariantD", "[", "\"\<\[Nu]\>\"", "]"}], ".", 
+       RowBox[{"\"\<E\>\"", "[", "\"\<\[Mu]\>\"", "]"}]}]}]}], "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"-", "1"}], ",", 
+     RowBox[{"-", "1"}]}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9559449650041847`*^9, 3.9559450222202168`*^9}, {
+  3.955945189990265*^9, 3.955945292602247*^9}, {3.955945435932207*^9, 
+  3.9559454593580914`*^9}, {3.9559455905782604`*^9, 3.9559456204490986`*^9}, {
+  3.955945695673231*^9, 3.955945700592367*^9}, {3.955945803116907*^9, 
+  3.9559458062582073`*^9}, {3.9559566452521286`*^9, 3.95595664775371*^9}, {
+  3.955956737912508*^9, 3.9559567685083466`*^9}, {3.9559568232850304`*^9, 
+  3.9559568256898994`*^9}},
+ CellLabel->"In[6]:=",ExpressionUUID->"2b376582-6480-0f4a-bf1a-5fc4056e657d"],
+
+Cell[BoxData[
+ StyleBox[
+  TagBox[GridBox[{
+     {
+      TemplateBox[{"\"Killing\"", "\":\""},
+       "RowDefault"]},
+     {
+      TagBox[GridBox[{
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"\[Theta]\"", "\"\[Theta]\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> 
+                 False]}, "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"2", " ", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"\[Xi]\[Theta]", "[", 
+               RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Theta]"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"\[Theta]\"", "\"\[Phi]\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"\[Phi]\"", "\"\[Theta]\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> 
+                 False]}, "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           TemplateBox[{"Inactive", 
+             RowBox[{"\[Xi]\[Theta]", "[", 
+               RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Phi]"},
+            "InactiveD"], "+", 
+           RowBox[{
+            SuperscriptBox[
+             RowBox[{"Sin", "[", "\[Theta]", "]"}], "2"], " ", 
+            TemplateBox[{"Inactive", 
+              RowBox[{"\[Xi]\[Phi]", "[", 
+                RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Theta]"},
+             "InactiveD"]}]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"\[Phi]\"", "\"\[Phi]\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"2", " ", 
+           SuperscriptBox[
+            RowBox[{"Sin", "[", "\[Theta]", "]"}], "2"], " ", 
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"Cot", "[", "\[Theta]", "]"}], " ", 
+              RowBox[{"\[Xi]\[Theta]", "[", 
+               RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]}], "+", 
+             TemplateBox[{"Inactive", 
+               RowBox[{"\[Xi]\[Phi]", "[", 
+                 RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Phi]"},
+              "InactiveD"]}], ")"}]}]}
+        },
+        AutoDelete->False,
+        GridBoxAlignment->{"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+        GridBoxItemSize->{
+         "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+       "Grid"]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+   "Column"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.9559724013594475`*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"afecc358-1ccd-d84f-accc-0ca51eeda517"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TShow", "[", "\"\<Killing\>\"", "]"}]], "Input",
+ CellChangeTimes->{{3.955945704810192*^9, 3.955945711764145*^9}},
+ CellLabel->"In[7]:=",ExpressionUUID->"071da160-0e98-df4e-9895-632f0e680134"],
+
+Cell[BoxData[
+ StyleBox[
+  TemplateBox[{"\"Killing\"", "\":   \"", 
+    TemplateBox[{"\"\[DottedSquare]\"", 
+      TemplateBox[{"\"\[Mu]\"", 
+        StyleBox["\"\[Nu]\"", ShowContents -> False, StripOnInput -> False]}, 
+       "RowDefault"], 
+      TemplateBox[{
+        StyleBox["\"\[Mu]\"", ShowContents -> False, StripOnInput -> False], 
+        "\"\[Nu]\""}, "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+     SubsuperscriptBox], "\"(\"", 
+    TemplateBox[{",", "\",\"", "\[Theta]", "\[Phi]"}, "RowWithSeparators"], 
+    "\")\"", "\" = \"", 
+    TagBox[
+     RowBox[{"(", "\[NoBreak]", 
+       GridBox[{{
+          RowBox[{"2", " ", 
+            TemplateBox[{"Inactive", 
+              RowBox[{"\[Xi]\[Theta]", "[", 
+                RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Theta]"}, 
+             "InactiveD"]}], 
+          RowBox[{
+            RowBox[{
+              SuperscriptBox[
+               RowBox[{"Csc", "[", "\[Theta]", "]"}], "2"], " ", 
+              TemplateBox[{"Inactive", 
+                RowBox[{"\[Xi]\[Theta]", "[", 
+                  RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Phi]"}, 
+               "InactiveD"]}], "+", 
+            TemplateBox[{"Inactive", 
+              RowBox[{"\[Xi]\[Phi]", "[", 
+                RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Theta]"}, 
+             "InactiveD"]}]}, {
+          RowBox[{
+            TemplateBox[{"Inactive", 
+              RowBox[{"\[Xi]\[Theta]", "[", 
+                RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Phi]"}, 
+             "InactiveD"], "+", 
+            RowBox[{
+              SuperscriptBox[
+               RowBox[{"Sin", "[", "\[Theta]", "]"}], "2"], " ", 
+              TemplateBox[{"Inactive", 
+                RowBox[{"\[Xi]\[Phi]", "[", 
+                  RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Theta]"}, 
+               "InactiveD"]}]}], 
+          RowBox[{"2", " ", 
+            RowBox[{"(", 
+              RowBox[{
+                RowBox[{
+                  RowBox[{"Cot", "[", "\[Theta]", "]"}], " ", 
+                  RowBox[{"\[Xi]\[Theta]", "[", 
+                    RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]}], "+", 
+                TemplateBox[{"Inactive", 
+                  RowBox[{"\[Xi]\[Phi]", "[", 
+                    RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}], "\[Phi]"}, 
+                 "InactiveD"]}], ")"}]}]}}, RowSpacings -> 1, ColumnSpacings -> 
+        1, RowAlignments -> Baseline, ColumnAlignments -> Center], 
+       "\[NoBreak]", ")"}], 
+     Function[BoxForm`e$, 
+      MatrixForm[BoxForm`e$]]]},
+   "RowDefault"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.955972401507929*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"1aac9ea5-837d-2243-baf4-026f64034257"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TNewCoordinates", "[", 
+  RowBox[{"\"\<Cartesian\>\"", ",", 
+   RowBox[{"{", 
+    RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9559585428265705`*^9, 3.9559585692522583`*^9}},
+ CellLabel->"In[9]:=",ExpressionUUID->"5e000755-13c7-ff45-a72f-4df62e96b036"],
+
+Cell[BoxData["\<\"Cartesian\"\>"], "Output",
+ CellChangeTimes->{3.955958571465563*^9, 3.9559724016552753`*^9},
+ CellLabel->"Out[9]=",ExpressionUUID->"2506238b-cfe3-4447-bcad-61e979240342"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TShow", "@", 
+  RowBox[{"TNewMetric", "[", 
+   RowBox[{"\"\<Mink\>\"", ",", "\"\<Cartesian\>\"", ",", 
+    RowBox[{"DiagonalMatrix", "[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"-", "1"}], ",", "1", ",", "1", ",", "1"}], "}"}], "]"}], 
+    ",", "\"\<\[Eta]\>\""}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.9559585731473846`*^9, 3.9559586058153324`*^9}},
+ CellLabel->"In[10]:=",ExpressionUUID->"d091a19a-b25a-cb40-b343-f4d428e84689"],
+
+Cell[BoxData[
+ StyleBox[
+  TemplateBox[{"\"Mink\"", "\":   \"", 
+    TemplateBox[{"\"\[Eta]\"", 
+      TemplateBox[{"\"\[Mu]\"", "\"\[Nu]\""}, "RowDefault"], 
+      TemplateBox[{
+        StyleBox["\"\[Mu]\"", ShowContents -> False, StripOnInput -> False], 
+        StyleBox["\"\[Nu]\"", ShowContents -> False, StripOnInput -> False]}, 
+       "RowDefault"]}, "Subsuperscript", SyntaxForm -> SubsuperscriptBox], 
+    "\"(\"", 
+    TemplateBox[{",", "\",\"", "t", "x", "y", "z"}, "RowWithSeparators"], 
+    "\")\"", "\" = \"", 
+    TagBox[
+     RowBox[{"(", "\[NoBreak]", 
+       GridBox[{{
+          RowBox[{"-", "1"}], "0", "0", "0"}, {"0", "1", "0", "0"}, {
+         "0", "0", "1", "0"}, {"0", "0", "0", "1"}}, RowSpacings -> 1, 
+        ColumnSpacings -> 1, RowAlignments -> Baseline, ColumnAlignments -> 
+        Center], "\[NoBreak]", ")"}], 
+     Function[BoxForm`e$, 
+      MatrixForm[BoxForm`e$]]]},
+   "RowDefault"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.95597240176947*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"c4cfe6ca-4d69-804a-832e-6d49f641330d"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TNewTensor", "[", 
+  RowBox[{"\"\<E2\>\"", ",", "\"\<Mink\>\"", ",", "\"\<Cartesian\>\"", ",", 
+   RowBox[{"{", "1", "}"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"Et", "[", 
+      RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], ",", 
+     RowBox[{"Ex", "[", 
+      RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], ",", 
+     RowBox[{"Ey", "[", 
+      RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], ",", 
+     RowBox[{"Ez", "[", 
+      RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}]}], "}"}], 
+   ",", "\"\<\[Xi]\>\""}], "]"}]], "Input",
+ CellChangeTimes->{{3.955958609288185*^9, 3.955958687016802*^9}},
+ CellLabel->"In[11]:=",ExpressionUUID->"69d8e3f7-e8b2-d24a-87ac-71a2dccc2995"],
+
+Cell[BoxData["\<\"E2\"\>"], "Output",
+ CellChangeTimes->{3.955958688803402*^9, 3.955972401877659*^9},
+ CellLabel->"Out[11]=",ExpressionUUID->"b621a1ce-010b-274b-a48e-8fec88f15563"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TList", "[", 
+  RowBox[{
+   RowBox[{"TCalc", "[", 
+    RowBox[{"\"\<KillingMink\>\"", ",", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"TCovariantD", "[", "\"\<\[Mu]\>\"", "]"}], ".", 
+       RowBox[{"\"\<E2\>\"", "[", "\"\<\[Nu]\>\"", "]"}]}], "+", 
+      RowBox[{
+       RowBox[{"TCovariantD", "[", "\"\<\[Nu]\>\"", "]"}], ".", 
+       RowBox[{"\"\<E2\>\"", "[", "\"\<\[Mu]\>\"", "]"}]}]}]}], "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"-", "1"}], ",", 
+     RowBox[{"-", "1"}]}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9559587024672565`*^9, 3.9559587192036667`*^9}},
+ CellLabel->"In[12]:=",ExpressionUUID->"ce57c5fd-5881-bb4d-ba27-ea29865da439"],
+
+Cell[BoxData[
+ StyleBox[
+  TagBox[GridBox[{
+     {
+      TemplateBox[{"\"KillingMink\"", "\":\""},
+       "RowDefault"]},
+     {
+      TagBox[GridBox[{
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"t\"", "\"t\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           RowBox[{"-", "2"}], " ", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Et", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "t"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"t\"", "\"x\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"x\"", "\"t\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           RowBox[{"-", 
+            TemplateBox[{"Inactive", 
+              RowBox[{"Et", "[", 
+                RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "x"},
+             "InactiveD"]}], "+", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ex", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "t"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"t\"", "\"y\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"y\"", "\"t\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           RowBox[{"-", 
+            TemplateBox[{"Inactive", 
+              RowBox[{"Et", "[", 
+                RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "y"},
+             "InactiveD"]}], "+", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ey", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "t"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"t\"", "\"z\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"z\"", "\"t\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"t\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           RowBox[{"-", 
+            TemplateBox[{"Inactive", 
+              RowBox[{"Et", "[", 
+                RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "z"},
+             "InactiveD"]}], "+", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ez", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "t"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"x\"", "\"x\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"2", " ", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ex", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "x"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"x\"", "\"y\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"y\"", "\"x\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ex", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "y"},
+            "InactiveD"], "+", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ey", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "x"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"x\"", "\"z\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"z\"", "\"x\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"x\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ex", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "z"},
+            "InactiveD"], "+", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ez", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "x"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"y\"", "\"y\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"2", " ", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ey", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "y"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"y\"", "\"z\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox], 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"z\"", "\"y\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"y\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ey", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "z"},
+            "InactiveD"], "+", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ez", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "y"},
+            "InactiveD"]}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[DottedSquare]\"", 
+              TemplateBox[{"\"z\"", "\"z\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False], 
+                StyleBox[
+                "\"z\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"2", " ", 
+           TemplateBox[{"Inactive", 
+             RowBox[{"Ez", "[", 
+               RowBox[{"t", ",", "x", ",", "y", ",", "z"}], "]"}], "z"},
+            "InactiveD"]}]}
+        },
+        AutoDelete->False,
+        GridBoxAlignment->{"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+        GridBoxItemSize->{
+         "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+       "Grid"]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+   "Column"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.955972402224682*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"e6d061f2-a128-f74a-ae68-a799001bc86d"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"TList", "[", 
+  RowBox[{"\"\<E\>\"", ",", 
+   RowBox[{"{", 
+    RowBox[{"-", "1"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9559723898373127`*^9, 3.9559723934637203`*^9}, {
+  3.9559724296376457`*^9, 3.955972494948576*^9}},
+ CellLabel->"In[16]:=",ExpressionUUID->"4f1c29b2-6ecd-0747-8871-fce64b0cb366"],
+
+Cell[BoxData[
+ StyleBox[
+  TagBox[GridBox[{
+     {
+      TemplateBox[{"\"E\"", "\":\""},
+       "RowDefault"]},
+     {
+      TagBox[GridBox[{
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[Xi]\"", 
+              TemplateBox[{"\"\[Theta]\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Theta]\"", ShowContents -> False, StripOnInput -> 
+                 False]}, "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{"\[Xi]\[Theta]", "[", 
+           RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]},
+         {
+          TemplateBox[{"=", "\"=\"", 
+            TemplateBox[{"\"\[Xi]\"", 
+              TemplateBox[{"\"\[Phi]\""}, "RowDefault"], 
+              TemplateBox[{
+                StyleBox[
+                "\"\[Phi]\"", ShowContents -> False, StripOnInput -> False]}, 
+               "RowDefault"]}, "Subsuperscript", SyntaxForm -> 
+             SubsuperscriptBox]},
+           "RowWithSeparators"], "\<\"=\"\>", 
+          RowBox[{
+           SuperscriptBox[
+            RowBox[{"Sin", "[", "\[Theta]", "]"}], "2"], " ", 
+           RowBox[{"\[Xi]\[Phi]", "[", 
+            RowBox[{"\[Theta]", ",", "\[Phi]"}], "]"}]}]}
+        },
+        AutoDelete->False,
+        GridBoxAlignment->{"Columns" -> {{Left}}, "Rows" -> {{Baseline}}},
+        GridBoxItemSize->{
+         "Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+       "Grid"]}
+    },
+    DefaultBaseStyle->"Column",
+    GridBoxAlignment->{"Columns" -> {{Center}}, "Rows" -> {{Baseline}}},
+    GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+   "Column"], "DisplayFormula",
+  StripOnInput->False]], "Output",
+ Editable->False,
+ CellLabelStyle->Directive["CellLabel", Smaller, 
+   RGBColor[0, 0, 1]],
+ CellChangeTimes->{3.9559724961079426`*^9},
+ CellLabel->"OGRe:",ExpressionUUID->"1260f7f4-7d75-0643-84fb-6f7521fe8400"]
+}, Open  ]]
+},
+WindowSize->{1141.2, 568.8},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"f5172ffc-07ac-9544-affd-ced11e5f4eec"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[576, 22, 216, 3, 28, "Input",ExpressionUUID->"2fec3166-0d0b-b44b-81f0-471685f4b525"],
+Cell[795, 27, 5069, 129, 186, "Output",ExpressionUUID->"34f58403-401b-814a-ab33-86104fbc2142"],
+Cell[5867, 158, 429, 10, 26, "Message",ExpressionUUID->"5ae96ca5-717a-2e40-afdb-164e1dff6f6e"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6333, 173, 310, 6, 28, "Input",ExpressionUUID->"fd1594e4-880d-a643-9d64-057961b8c446"],
+Cell[6646, 181, 179, 2, 32, "Output",ExpressionUUID->"a515e52c-9074-ac48-a305-ae95d07df2c8"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6862, 188, 481, 11, 30, "Input",ExpressionUUID->"5491d4c1-cbd9-b642-96fe-9d0dd8456ae7"],
+Cell[7346, 201, 1162, 27, 50, "Output",ExpressionUUID->"482e8acc-21b6-d84c-b01d-c63536dddc92"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[8545, 233, 304, 5, 28, "Input",ExpressionUUID->"0376d646-9813-bd45-869e-018e55b7381b"],
+Cell[8852, 240, 433, 11, 26, "Message",ExpressionUUID->"bbc66c03-3124-154c-a8b7-128f44178b57"],
+Cell[9288, 253, 3023, 71, 78, "Output",ExpressionUUID->"2b59e5d9-7bc5-184e-8526-79179df24935"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[12348, 329, 842, 17, 28, "Input",ExpressionUUID->"9fb07f85-6641-a34a-85a8-1dade742ced6"],
+Cell[13193, 348, 1871, 48, 74, "Output",ExpressionUUID->"a65ae8fe-3c83-2f42-a544-558fb9713463"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[15101, 401, 1089, 23, 28, "Input",ExpressionUUID->"2b376582-6480-0f4a-bf1a-5fc4056e657d"],
+Cell[16193, 426, 4229, 99, 99, "Output",ExpressionUUID->"afecc358-1ccd-d84f-accc-0ca51eeda517"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[20459, 530, 216, 3, 28, "Input",ExpressionUUID->"071da160-0e98-df4e-9895-632f0e680134"],
+Cell[20678, 535, 2838, 66, 54, "Output",ExpressionUUID->"1aac9ea5-837d-2243-baf4-026f64034257"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[23553, 606, 324, 6, 28, "Input",ExpressionUUID->"5e000755-13c7-ff45-a72f-4df62e96b036"],
+Cell[23880, 614, 188, 2, 32, "Output",ExpressionUUID->"2506238b-cfe3-4447-bcad-61e979240342"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[24105, 621, 467, 10, 28, "Input",ExpressionUUID->"d091a19a-b25a-cb40-b343-f4d428e84689"],
+Cell[24575, 633, 1185, 27, 85, "Output",ExpressionUUID->"c4cfe6ca-4d69-804a-832e-6d49f641330d"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25797, 665, 732, 16, 28, "Input",ExpressionUUID->"69d8e3f7-e8b2-d24a-87ac-71a2dccc2995"],
+Cell[26532, 683, 180, 2, 32, "Output",ExpressionUUID->"b621a1ce-010b-274b-a48e-8fec88f15563"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[26749, 690, 695, 17, 28, "Input",ExpressionUUID->"ce57c5fd-5881-bb4d-ba27-ea29865da439"],
+Cell[27447, 709, 11891, 276, 240, "Output",ExpressionUUID->"e6d061f2-a128-f74a-ae68-a799001bc86d"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[39375, 990, 333, 7, 28, "Input",ExpressionUUID->"4f1c29b2-6ecd-0747-8871-fce64b0cb366"],
+Cell[39711, 999, 1986, 51, 74, "Output",ExpressionUUID->"1260f7f4-7d75-0643-84fb-6f7521fe8400"]
+}, Open  ]]
+}
+]
+*)
+

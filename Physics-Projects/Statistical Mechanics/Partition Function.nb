@@ -1,0 +1,1727 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     60082,       1719]
+NotebookOptionsPosition[     58550,       1684]
+NotebookOutlinePosition[     58984,       1701]
+CellTagsIndexPosition[     58941,       1698]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "PartitionThermo", "]"}], 
+  "\[IndentingNewLine]"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"Options", "[", "PartitionThermo", "]"}], "=", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"Method", "->", "\"\<Discrete\>\""}], ",", 
+      RowBox[{"DiscreteVariable", "->", "n"}], ",", 
+      RowBox[{"QDomain", "->", 
+       RowBox[{"{", 
+        RowBox[{"q", ",", "0", ",", "Infinity"}], "}"}]}], ",", 
+      RowBox[{"PDomain", "->", 
+       RowBox[{"{", 
+        RowBox[{"p", ",", "0", ",", "Infinity"}], "}"}]}], ",", 
+      RowBox[{"NParticles", "->", "1"}], ",", 
+      RowBox[{"ProbabilityQuery", "->", "Automatic"}]}], "}"}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\n", 
+ RowBox[{
+  RowBox[{"PartitionThermo", "[", 
+   RowBox[{"input_", ",", 
+    RowBox[{"opts", ":", 
+     RowBox[{"OptionsPattern", "[", "]"}]}]}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"(*", 
+      RowBox[{"Option", " ", "Inputs"}], "*)"}], 
+     RowBox[{
+      RowBox[{"method", "=", 
+       RowBox[{"OptionValue", "[", "Method", "]"}]}], ",", 
+      RowBox[{"n", "=", 
+       RowBox[{"OptionValue", "[", "DiscreteVariable", "]"}]}], ",", 
+      RowBox[{"qdom", "=", 
+       RowBox[{"OptionValue", "[", "QDomain", "]"}]}], ",", 
+      RowBox[{"pdom", "=", 
+       RowBox[{"OptionValue", "[", "PDomain", "]"}]}], ",", 
+      RowBox[{"N", "=", 
+       RowBox[{"OptionValue", "[", "NParticles", "]"}]}], ",", 
+      RowBox[{"probQuery", "=", 
+       RowBox[{"OptionValue", "[", "ProbabilityQuery", "]"}]}], ",", 
+      RowBox[{"(*", "Variables", "*)"}], "q", ",", "qmin", ",", "qmax", ",", 
+      "p", ",", "pmin", ",", "pmax", ",", "Z", ",", "ZN", ",", "beta", ",", 
+      "U", ",", "F", ",", "S", ",", "CV", ",", "Hval", ",", "Gval", ",", 
+      "probFunc", ",", "probResult", ",", 
+      RowBox[{"(*", 
+       RowBox[{"Internal", " ", "Symbols"}], "*)"}], 
+      RowBox[{"h", "=", "h"}], ",", 
+      RowBox[{"kB", "=", "kB"}], ",", 
+      RowBox[{"T", "=", "T"}], ",", 
+      RowBox[{"P", "=", "P"}], ",", 
+      RowBox[{"V", "=", "V"}]}], "}"}], ",", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"q", ",", "qmin", ",", "qmax"}], "}"}], "=", "qdom"}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"p", ",", "pmin", ",", "pmax"}], "}"}], "=", "pdom"}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"beta", "=", 
+      RowBox[{"1", "/", 
+       RowBox[{"(", 
+        RowBox[{"kB", " ", "T"}], ")"}]}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{"Partition", " ", "Function", " ", "Z"}], "*)"}], 
+     RowBox[{"Z", "=", 
+      RowBox[{
+       RowBox[{"Simplify", "@", 
+        RowBox[{"Switch", "[", 
+         RowBox[{"method", ",", "\"\<Discrete\>\"", ",", 
+          RowBox[{"Sum", "[", 
+           RowBox[{
+            RowBox[{"Exp", "[", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", "beta"}], " ", "input"}], "/.", " ", 
+              RowBox[{"n", "->", "i"}]}], "]"}], ",", 
+            RowBox[{"{", 
+             RowBox[{"i", ",", "0", ",", "Infinity"}], "}"}]}], "]"}], 
+          ",", "\"\<Continuous\>\"", ",", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"1", "/", "h"}], ")"}], " ", 
+           RowBox[{"Integrate", "[", 
+            RowBox[{
+             RowBox[{"Exp", "[", 
+              RowBox[{
+               RowBox[{"-", "beta"}], " ", "input"}], "]"}], ",", 
+             RowBox[{"{", 
+              RowBox[{"q", ",", "qmin", ",", "qmax"}], "}"}], ",", 
+             RowBox[{"{", 
+              RowBox[{"p", ",", "pmin", ",", "pmax"}], "}"}], ",", 
+             RowBox[{"Assumptions", "->", 
+              RowBox[{
+               RowBox[{"Element", "[", 
+                RowBox[{
+                 RowBox[{"{", 
+                  RowBox[{"q", ",", "p"}], "}"}], ",", "Reals"}], "]"}], "&&", 
+               RowBox[{"q", ">=", "0"}], "&&", 
+               RowBox[{"p", ">=", "0"}]}]}]}], "]"}]}], ",", "\"\<Direct\>\"",
+           ",", "input", ",", "_", ",", 
+          RowBox[{
+          "Return", 
+           "[", "\"\<Invalid Method: Choose \\\"Discrete\\\", \
+\\\"Continuous\\\", or \\\"Direct\\\"\>\"", "]"}]}], "]"}]}], "//", 
+       "PowerExpand"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"ZN", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{
+        RowBox[{"Z", "^", "N"}], "/", 
+        RowBox[{"Factorial", "[", "N", "]"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"U", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{
+        RowBox[{"-", 
+         RowBox[{"D", "[", 
+          RowBox[{
+           RowBox[{"Log", "[", "Z", "]"}], ",", "T"}], "]"}]}], "*", 
+        RowBox[{"T", "^", "2"}], "*", "kB"}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"F", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{
+        RowBox[{"-", "kB"}], " ", "T", " ", 
+        RowBox[{"Log", "[", "ZN", "]"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"S", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"U", "-", "F"}], ")"}], "/", "T"}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"CV", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{"D", "[", 
+        RowBox[{"U", ",", "T"}], "]"}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Hval", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{"U", "+", 
+        RowBox[{"P", " ", "V"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Gval", "=", 
+      RowBox[{"Simplify", "[", 
+       RowBox[{"F", "+", 
+        RowBox[{"P", " ", "V"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{"Probability", " ", "Function"}], "*)"}], 
+     RowBox[{"probFunc", "=", 
+      RowBox[{"Switch", "[", 
+       RowBox[{"method", ",", "\"\<Discrete\>\"", ",", 
+        RowBox[{"Function", "[", 
+         RowBox[{"i", ",", 
+          RowBox[{
+           RowBox[{"Exp", "[", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"-", "beta"}], " ", "input"}], "/.", " ", 
+             RowBox[{"n", "->", "i"}]}], "]"}], "/", "Z"}]}], "]"}], 
+        ",", "\"\<Continuous\>\"", ",", 
+        RowBox[{"Function", "[", 
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{"qq", ",", "pp"}], "}"}], ",", 
+          RowBox[{
+           RowBox[{"Exp", "[", 
+            RowBox[{
+             RowBox[{
+              RowBox[{"-", "beta"}], " ", "input"}], "/.", " ", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"q", "->", "qq"}], ",", 
+               RowBox[{"p", "->", "pp"}]}], "}"}]}], "]"}], "/", "Z"}]}], 
+         "]"}], ",", "\"\<Direct\>\"", ",", "None"}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"probResult", "=", 
+      RowBox[{"Switch", "[", 
+       RowBox[{"method", ",", "\"\<Direct\>\"", ",", 
+        RowBox[{"Style", "[", 
+         RowBox[{"\"\<Probability not defined for Direct method.\>\"", ",", 
+          "Red"}], "]"}], ",", "\"\<Continuous\>\"", ",", 
+        RowBox[{"Column", "[", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"Style", "[", 
+            RowBox[{"\"\<P[q_, p_]\>\"", ",", "Bold"}], "]"}], ",", 
+           RowBox[{"probFunc", "[", 
+            RowBox[{"q", ",", "p"}], "]"}]}], "}"}], "]"}], 
+        ",", "\"\<Discrete\>\"", ",", 
+        RowBox[{"Which", "[", 
+         RowBox[{
+          RowBox[{"probQuery", "===", "Automatic"}], ",", 
+          RowBox[{"Column", "[", 
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"Style", "[", 
+              RowBox[{"\"\<P[n_]\>\"", ",", "Bold"}], "]"}], ",", 
+             RowBox[{"probFunc", "[", "n", "]"}]}], "}"}], "]"}], ",", 
+          RowBox[{"IntegerQ", "[", "probQuery", "]"}], ",", 
+          RowBox[{"Row", "[", 
+           RowBox[{"{", 
+            RowBox[{
+             RowBox[{"Style", "[", 
+              RowBox[{"\"\<P(\>\"", ",", "Bold"}], "]"}], ",", "probQuery", ",", 
+             RowBox[{"Style", "[", 
+              RowBox[{"\"\<) = \>\"", ",", "Bold"}], "]"}], ",", 
+             RowBox[{"probFunc", "[", "probQuery", "]"}]}], "}"}], "]"}], ",", 
+          RowBox[{
+           RowBox[{"Head", "[", "probQuery", "]"}], "===", "LessThan"}], ",", 
+          RowBox[{"With", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"m", "=", 
+              RowBox[{"probQuery", "[", 
+               RowBox[{"[", "1", "]"}], "]"}]}], "}"}], ",", 
+            RowBox[{"Row", "[", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"Style", "[", 
+                RowBox[{"\"\<\[Sum] P(i), i < \>\"", ",", "Bold"}], "]"}], ",",
+                "m", ",", "\"\<: \>\"", ",", 
+               RowBox[{"Sum", "[", 
+                RowBox[{
+                 RowBox[{"probFunc", "[", "i", "]"}], ",", 
+                 RowBox[{"{", 
+                  RowBox[{"i", ",", "0", ",", 
+                   RowBox[{"m", "-", "1"}]}], "}"}]}], "]"}]}], "}"}], 
+             "]"}]}], "]"}], ",", 
+          RowBox[{
+           RowBox[{"Head", "[", "probQuery", "]"}], "===", "LessEqual"}], ",", 
+          RowBox[{"With", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"m", "=", 
+              RowBox[{"probQuery", "[", 
+               RowBox[{"[", "1", "]"}], "]"}]}], "}"}], ",", 
+            RowBox[{"Row", "[", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"Style", "[", 
+                RowBox[{"\"\<\[Sum] P(i), i \[LessEqual] \>\"", ",", "Bold"}],
+                 "]"}], ",", "m", ",", "\"\<: \>\"", ",", 
+               RowBox[{"Sum", "[", 
+                RowBox[{
+                 RowBox[{"probFunc", "[", "i", "]"}], ",", 
+                 RowBox[{"{", 
+                  RowBox[{"i", ",", "0", ",", "m"}], "}"}]}], "]"}]}], "}"}], 
+             "]"}]}], "]"}], ",", 
+          RowBox[{
+           RowBox[{"Head", "[", "probQuery", "]"}], "===", "GreaterEqual"}], ",", 
+          RowBox[{"With", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"m", "=", 
+              RowBox[{"probQuery", "[", 
+               RowBox[{"[", "1", "]"}], "]"}]}], "}"}], ",", 
+            RowBox[{"Row", "[", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"Style", "[", 
+                
+                RowBox[{"\"\<\[Sum] P(i), i \[GreaterEqual] \>\"", ",", 
+                 "Bold"}], "]"}], ",", "m", ",", "\"\<: \>\"", ",", 
+               RowBox[{"Sum", "[", 
+                RowBox[{
+                 RowBox[{"probFunc", "[", "i", "]"}], ",", 
+                 RowBox[{"{", 
+                  RowBox[{"i", ",", "m", ",", "Infinity"}], "}"}]}], "]"}]}], 
+              "}"}], "]"}]}], "]"}], ",", 
+          RowBox[{
+           RowBox[{"Head", "[", "probQuery", "]"}], "===", "GreaterThan"}], ",", 
+          RowBox[{"With", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"m", "=", 
+              RowBox[{"probQuery", "[", 
+               RowBox[{"[", "1", "]"}], "]"}]}], "}"}], ",", 
+            RowBox[{"Row", "[", 
+             RowBox[{"{", 
+              RowBox[{
+               RowBox[{"Style", "[", 
+                RowBox[{"\"\<\[Sum] P(i), i > \>\"", ",", "Bold"}], "]"}], ",",
+                "m", ",", "\"\<: \>\"", ",", 
+               RowBox[{"Sum", "[", 
+                RowBox[{
+                 RowBox[{"probFunc", "[", "i", "]"}], ",", 
+                 RowBox[{"{", 
+                  RowBox[{"i", ",", 
+                   RowBox[{"m", "+", "1"}], ",", "Infinity"}], "}"}]}], 
+                "]"}]}], "}"}], "]"}]}], "]"}], ",", "True", ",", 
+          RowBox[{"Style", "[", 
+           RowBox[{"\"\<Invalid ProbabilityQuery format.\>\"", ",", "Red"}], 
+           "]"}]}], "]"}]}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"TabView", "[", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"\"\<Partition Functions\>\"", "->", 
+         RowBox[{"Panel", "[", 
+          RowBox[{"Column", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"Style", "[", 
+               
+               RowBox[{"\"\<Single Particle Partition Function Z\>\"", ",", 
+                "Bold", ",", 
+                RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+              RowBox[{"Style", "[", 
+               RowBox[{"Z", ",", 
+                RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+              RowBox[{"Spacer", "[", "15", "]"}], ",", 
+              RowBox[{"(*", 
+               RowBox[{"Separation", " ", "between", " ", "Z", " ", "and", " ", 
+                RowBox[{"Z", "^", "N"}]}], "*)"}], 
+              RowBox[{"Style", "[", 
+               
+               RowBox[{"\"\<Total Partition Function \!\(\*SuperscriptBox[\(Z\
+\), \(N\)]\)\>\"", ",", "Bold", ",", 
+                RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+              RowBox[{"Style", "[", 
+               RowBox[{"ZN", ",", 
+                RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}], ",", 
+            RowBox[{"Spacings", "->", "2"}]}], "]"}], "]"}]}], ",", 
+        RowBox[{"\"\<Thermal Quantities\>\"", "->", 
+         RowBox[{"Panel", "[", 
+          RowBox[{"Grid", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"Style", "[", 
+                 RowBox[{"\"\<Internal Energy U\>\"", ",", "Bold", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+                RowBox[{"Style", "[", 
+                 RowBox[{"U", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"Style", "[", 
+                 RowBox[{"\"\<Helmholtz Free Energy F\>\"", ",", "Bold", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+                RowBox[{"Style", "[", 
+                 RowBox[{"F", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"Style", "[", 
+                 RowBox[{"\"\<Entropy S\>\"", ",", "Bold", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+                RowBox[{"Style", "[", 
+                 RowBox[{"S", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"Style", "[", 
+                 
+                 RowBox[{"\"\<Heat Capacity \!\(\*SubscriptBox[\(C\), \
+\(V\)]\)\>\"", ",", "Bold", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+                RowBox[{"Style", "[", 
+                 RowBox[{"CV", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}]}], "}"}],
+             ",", 
+            RowBox[{"Spacings", "->", 
+             RowBox[{"{", 
+              RowBox[{"2", ",", "3"}], "}"}]}]}], "]"}], "]"}]}], ",", 
+        RowBox[{"\"\<Free Energy Potentials\>\"", "->", 
+         RowBox[{"Panel", "[", 
+          RowBox[{"Grid", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"Style", "[", 
+                 RowBox[{"\"\<Enthalpy H\>\"", ",", "Bold", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+                RowBox[{"Style", "[", 
+                 RowBox[{"Hval", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}], ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"Style", "[", 
+                 RowBox[{"\"\<Gibbs Free Energy G\>\"", ",", "Bold", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}], ",", 
+                RowBox[{"Style", "[", 
+                 RowBox[{"Gval", ",", 
+                  RowBox[{"FontSize", "->", "16"}]}], "]"}]}], "}"}]}], "}"}],
+             ",", 
+            RowBox[{"Spacings", "->", 
+             RowBox[{"{", 
+              RowBox[{"2", ",", "3"}], "}"}]}]}], "]"}], "]"}]}], ",", 
+        RowBox[{"\"\<Probability\>\"", "->", 
+         RowBox[{"Panel", "[", 
+          RowBox[{"Style", "[", 
+           RowBox[{"probResult", ",", 
+            RowBox[{"FontSize", "->", "16"}]}], "]"}], "]"}]}]}], "}"}], 
+      "]"}]}]}], "]"}]}], "\n"}], "Input",
+ CellChangeTimes->{{3.959936560287344*^9, 3.959936560287344*^9}, {
+  3.9599367569753017`*^9, 3.9599367608682804`*^9}, {3.9599368632450905`*^9, 
+  3.959936865138853*^9}, {3.959943137928339*^9, 3.9599431646579933`*^9}, {
+  3.9599432493048077`*^9, 3.9599432759677925`*^9}, {3.959943352878931*^9, 
+  3.9599433715443897`*^9}, {3.9599435420819874`*^9, 3.9599435774334793`*^9}, {
+  3.9599436480381546`*^9, 3.959943670719366*^9}, {3.959943899139065*^9, 
+  3.959943905571783*^9}, {3.960125632462641*^9, 3.960125646084385*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"db1bbe76-e922-c447-b53a-d92c2172114f"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"PartitionThermo", "[", 
+   RowBox[{
+    RowBox[{"\[HBar]", " ", "\[Omega]", " ", 
+     RowBox[{"(", 
+      RowBox[{"n", "+", 
+       RowBox[{"1", "/", "2"}]}], ")"}]}], ",", 
+    RowBox[{"Method", "->", "\"\<Discrete\>\""}], ",", 
+    RowBox[{"NParticles", "->", "2"}], ",", 
+    RowBox[{"ProbabilityQuery", "->", "1"}]}], "]"}], "\n"}]], "Input",
+ CellChangeTimes->{{3.959936571378479*^9, 3.9599365793814163`*^9}, {
+  3.9599366158966713`*^9, 3.9599366580403156`*^9}, {3.95993671507275*^9, 
+  3.959936719107132*^9}, {3.9599368004372997`*^9, 3.95993680616753*^9}, {
+  3.9599368844815006`*^9, 3.9599368846970844`*^9}},
+ CellLabel->"In[17]:=",ExpressionUUID->"52728be5-16fe-6844-85ec-e329218757e6"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Partition Functions\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Single Particle Partition Function Z\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        FractionBox[
+         SuperscriptBox["\[ExponentialE]", 
+          FractionBox[
+           RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+           RowBox[{"2", " ", "kB", " ", "T"}]]], 
+         RowBox[{
+          RowBox[{"-", "1"}], "+", 
+          SuperscriptBox["\[ExponentialE]", 
+           FractionBox[
+            RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+            RowBox[{"kB", " ", "T"}]]]}]],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       TemplateBox[{15},
+        "Spacer1"]},
+      {
+       StyleBox["\<\"Total Partition Function \
+\\!\\(\\*SuperscriptBox[\\(Z\\), \\(N\\)]\\)\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        FractionBox[
+         SuperscriptBox["\[ExponentialE]", 
+          FractionBox[
+           RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+           RowBox[{"kB", " ", "T"}]]], 
+         RowBox[{"2", " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{"-", "1"}], "+", 
+             SuperscriptBox["\[ExponentialE]", 
+              FractionBox[
+               RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+               RowBox[{"kB", " ", "T"}]]]}], ")"}], "2"]}]],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     DefaultBaseStyle->"Column",
+     GridBoxAlignment->{"Columns" -> {{Left}}},
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{2}}}],
+    "Column"]]}, {2,"\<\"Thermal Quantities\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Internal Energy U\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox[
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"1", "+", 
+             SuperscriptBox["\[ExponentialE]", 
+              FractionBox[
+               RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+               RowBox[{"kB", " ", "T"}]]]}], ")"}], " ", "\[Omega]", " ", 
+           "\[HBar]"}], 
+          RowBox[{"2", " ", 
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{"-", "1"}], "+", 
+             SuperscriptBox["\[ExponentialE]", 
+              FractionBox[
+               RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+               RowBox[{"kB", " ", "T"}]]]}], ")"}]}]]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Helmholtz Free Energy F\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", "kB"}], " ", "T", " ", 
+         RowBox[{"Log", "[", 
+          FractionBox[
+           SuperscriptBox["\[ExponentialE]", 
+            FractionBox[
+             RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+             RowBox[{"kB", " ", "T"}]]], 
+           RowBox[{"2", " ", 
+            SuperscriptBox[
+             RowBox[{"(", 
+              RowBox[{
+               RowBox[{"-", "1"}], "+", 
+               SuperscriptBox["\[ExponentialE]", 
+                FractionBox[
+                 RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+                 RowBox[{"kB", " ", "T"}]]]}], ")"}], "2"]}]], "]"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Entropy S\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         FractionBox[
+          RowBox[{
+           RowBox[{"\[Omega]", " ", "\[HBar]"}], "+", 
+           RowBox[{
+            SuperscriptBox["\[ExponentialE]", 
+             FractionBox[
+              RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+              RowBox[{"kB", " ", "T"}]]], " ", "\[Omega]", " ", "\[HBar]"}]}], 
+          RowBox[{
+           RowBox[{"2", " ", "T"}], "-", 
+           RowBox[{"2", " ", 
+            SuperscriptBox["\[ExponentialE]", 
+             FractionBox[
+              RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+              RowBox[{"kB", " ", "T"}]]], " ", "T"}]}]], "+", 
+         RowBox[{"kB", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            SuperscriptBox["\[ExponentialE]", 
+             FractionBox[
+              RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+              RowBox[{"kB", " ", "T"}]]], 
+            RowBox[{"2", " ", 
+             SuperscriptBox[
+              RowBox[{"(", 
+               RowBox[{
+                RowBox[{"-", "1"}], "+", 
+                SuperscriptBox["\[ExponentialE]", 
+                 FractionBox[
+                  RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+                  RowBox[{"kB", " ", "T"}]]]}], ")"}], "2"]}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Heat Capacity \\!\\(\\*SubscriptBox[\\(C\\), \\(V\\)]\\)\
+\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox[
+          RowBox[{
+           SuperscriptBox["\[ExponentialE]", 
+            FractionBox[
+             RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+             RowBox[{"kB", " ", "T"}]]], " ", 
+           SuperscriptBox["\[Omega]", "2"], " ", 
+           SuperscriptBox["\[HBar]", "2"]}], 
+          RowBox[{
+           SuperscriptBox[
+            RowBox[{"(", 
+             RowBox[{
+              RowBox[{"-", "1"}], "+", 
+              SuperscriptBox["\[ExponentialE]", 
+               FractionBox[
+                RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+                RowBox[{"kB", " ", "T"}]]]}], ")"}], "2"], " ", "kB", " ", 
+           SuperscriptBox["T", "2"]}]]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {3,"\<\"Free Energy Potentials\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Enthalpy H\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"P", " ", "V"}], "-", 
+         FractionBox[
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"1", "+", 
+             SuperscriptBox["\[ExponentialE]", 
+              FractionBox[
+               RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+               RowBox[{"kB", " ", "T"}]]]}], ")"}], " ", "\[Omega]", " ", 
+           "\[HBar]"}], 
+          RowBox[{"2", " ", 
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{"-", "1"}], "+", 
+             SuperscriptBox["\[ExponentialE]", 
+              FractionBox[
+               RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+               RowBox[{"kB", " ", "T"}]]]}], ")"}]}]]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Gibbs Free Energy G\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"P", " ", "V"}], "-", 
+         RowBox[{"kB", " ", "T", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            SuperscriptBox["\[ExponentialE]", 
+             FractionBox[
+              RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+              RowBox[{"kB", " ", "T"}]]], 
+            RowBox[{"2", " ", 
+             SuperscriptBox[
+              RowBox[{"(", 
+               RowBox[{
+                RowBox[{"-", "1"}], "+", 
+                SuperscriptBox["\[ExponentialE]", 
+                 FractionBox[
+                  RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+                  RowBox[{"kB", " ", "T"}]]]}], ")"}], "2"]}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {4,"\<\"Probability\"\>"->
+  PanelBox[
+   StyleBox[
+    TemplateBox[{
+      StyleBox["\"P(\"", Bold, StripOnInput -> False], "1", 
+      StyleBox["\") = \"", Bold, StripOnInput -> False], 
+      RowBox[{
+        SuperscriptBox["\[ExponentialE]", 
+         RowBox[{"-", 
+           FractionBox[
+            RowBox[{"2", " ", "\[Omega]", " ", "\[HBar]"}], 
+            RowBox[{"kB", " ", "T"}]]}]], " ", 
+        RowBox[{"(", 
+          RowBox[{
+            RowBox[{"-", "1"}], "+", 
+            SuperscriptBox["\[ExponentialE]", 
+             FractionBox[
+              RowBox[{"\[Omega]", " ", "\[HBar]"}], 
+              RowBox[{"kB", " ", "T"}]]]}], ")"}]}]},
+     "RowDefault"],
+    StripOnInput->False,
+    FontSize->16]]}}, 2]], "Output",
+ CellChangeTimes->{{3.959936574034704*^9, 3.959936581593584*^9}, {
+   3.959936618835825*^9, 3.959936659009741*^9}, 3.9599367200945015`*^9, {
+   3.959936783173376*^9, 3.9599368066153793`*^9}, {3.9599368716521587`*^9, 
+   3.9599368858395023`*^9}, 3.95994317314048*^9, {3.959943260516535*^9, 
+   3.9599432822705326`*^9}, 3.959943378500267*^9, {3.959943655716181*^9, 
+   3.9599436762274837`*^9}, 3.959943913082531*^9, 3.960107562605402*^9, 
+   3.960125651815033*^9},
+ CellLabel->"Out[17]=",ExpressionUUID->"a7e0cad7-e763-ef48-9645-a5193e721b6e"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"PartitionThermo", "[", 
+   RowBox[{
+    RowBox[{
+     RowBox[{"p", "^", "2"}], "/", 
+     RowBox[{"(", 
+      RowBox[{"2", " ", "m"}], ")"}]}], ",", 
+    RowBox[{"Method", "->", "\"\<Continuous\>\""}], ",", 
+    RowBox[{"QDomain", "->", 
+     RowBox[{"{", 
+      RowBox[{"q", ",", "0", ",", "L"}], "}"}]}], ",", 
+    RowBox[{"PDomain", "->", 
+     RowBox[{"{", 
+      RowBox[{"p", ",", "0", ",", "Infinity"}], "}"}]}], ",", 
+    RowBox[{"NParticles", "->", "N"}]}], "]"}], "\n"}]], "Input",
+ CellChangeTimes->{{3.9599369074924297`*^9, 3.9599369231536827`*^9}, {
+  3.959944002623148*^9, 3.9599440032071495`*^9}},
+ CellLabel->"In[5]:=",ExpressionUUID->"b1ade898-3492-344c-8284-f604e7afca3e"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Partition Functions\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Single Particle Partition Function Z\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        FractionBox[
+         RowBox[{
+          SqrtBox["kB"], " ", "L", " ", 
+          SqrtBox["m"], " ", 
+          SqrtBox[
+           FractionBox["\[Pi]", "2"]], " ", 
+          SqrtBox["T"]}], "h"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       TemplateBox[{15},
+        "Spacer1"]},
+      {
+       StyleBox["\<\"Total Partition Function Z^N\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        FractionBox[
+         RowBox[{
+          SuperscriptBox[
+           RowBox[{"(", 
+            FractionBox["\[Pi]", "2"], ")"}], 
+           RowBox[{"N", "/", "2"}]], " ", 
+          SuperscriptBox[
+           RowBox[{"(", 
+            FractionBox[
+             RowBox[{
+              SqrtBox["kB"], " ", "L", " ", 
+              SqrtBox["m"], " ", 
+              SqrtBox["T"]}], "h"], ")"}], "N"]}], 
+         RowBox[{"N", "!"}]],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     DefaultBaseStyle->"Column",
+     GridBoxAlignment->{"Columns" -> {{Left}}},
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{2}}}],
+    "Column"]]}, {2,"\<\"Thermal Quantities\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Internal Energy U\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox[
+          RowBox[{"kB", " ", "T"}], "2"]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Helmholtz Free Energy F\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", "kB"}], " ", "T", " ", 
+         RowBox[{"Log", "[", 
+          FractionBox[
+           RowBox[{
+            SuperscriptBox[
+             RowBox[{"(", 
+              FractionBox["\[Pi]", "2"], ")"}], 
+             RowBox[{"N", "/", "2"}]], " ", 
+            SuperscriptBox[
+             RowBox[{"(", 
+              FractionBox[
+               RowBox[{
+                SqrtBox["kB"], " ", "L", " ", 
+                SqrtBox["m"], " ", 
+                SqrtBox["T"]}], "h"], ")"}], "N"]}], 
+           RowBox[{"N", "!"}]], "]"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Entropy S\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", 
+          FractionBox["kB", "2"]}], "+", 
+         RowBox[{"kB", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            RowBox[{
+             SuperscriptBox[
+              RowBox[{"(", 
+               FractionBox["\[Pi]", "2"], ")"}], 
+              RowBox[{"N", "/", "2"}]], " ", 
+             SuperscriptBox[
+              RowBox[{"(", 
+               FractionBox[
+                RowBox[{
+                 SqrtBox["kB"], " ", "L", " ", 
+                 SqrtBox["m"], " ", 
+                 SqrtBox["T"]}], "h"], ")"}], "N"]}], 
+            RowBox[{"N", "!"}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Heat Capacity C_V\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox["kB", "2"]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {3,"\<\"Free Energy Potentials\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Enthalpy H\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", 
+          FractionBox[
+           RowBox[{"kB", " ", "T"}], "2"]}], "+", 
+         RowBox[{"P", " ", "V"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Gibbs Free Energy G\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"P", " ", "V"}], "-", 
+         RowBox[{"kB", " ", "T", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            RowBox[{
+             SuperscriptBox[
+              RowBox[{"(", 
+               FractionBox["\[Pi]", "2"], ")"}], 
+              RowBox[{"N", "/", "2"}]], " ", 
+             SuperscriptBox[
+              RowBox[{"(", 
+               FractionBox[
+                RowBox[{
+                 SqrtBox["kB"], " ", "L", " ", 
+                 SqrtBox["m"], " ", 
+                 SqrtBox["T"]}], "h"], ")"}], "N"]}], 
+            RowBox[{"N", "!"}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {4,"\<\"Probability\"\>"->
+  PanelBox[
+   StyleBox[
+    TagBox[GridBox[{
+       {
+        StyleBox["\<\"P[q_, p_]\"\>",
+         StripOnInput->False,
+         FontWeight->Bold]},
+       {
+        FractionBox[
+         RowBox[{
+          SuperscriptBox["\[ExponentialE]", 
+           RowBox[{"-", 
+            FractionBox[
+             SuperscriptBox["p", "2"], 
+             RowBox[{"2", " ", "kB", " ", "m", " ", "T"}]]}]], " ", "h", " ", 
+          SqrtBox[
+           FractionBox["2", "\[Pi]"]]}], 
+         RowBox[{
+          SqrtBox["kB"], " ", "L", " ", 
+          SqrtBox["m"], " ", 
+          SqrtBox["T"]}]]}
+      },
+      DefaultBaseStyle->"Column",
+      GridBoxAlignment->{"Columns" -> {{Left}}},
+      GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+     "Column"],
+    StripOnInput->False,
+    FontSize->16]]}}, 4]], "Output",
+ CellChangeTimes->{3.959936913607914*^9, 3.959943698950983*^9, 
+  3.9599439212652225`*^9, 3.959944008257492*^9, 3.960107568190632*^9},
+ CellLabel->"Out[5]=",ExpressionUUID->"e921b794-d7ae-7745-a689-1e7793519d86"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"PartitionThermo", "[", 
+   RowBox[{
+    RowBox[{"2", " ", 
+     RowBox[{"Cosh", "[", 
+      RowBox[{"\[Mu]", " ", 
+       RowBox[{"B", "/", 
+        RowBox[{"(", 
+         RowBox[{"kB", " ", "T"}], ")"}]}]}], "]"}]}], ",", 
+    RowBox[{"Method", "->", "\"\<Direct\>\""}], ",", 
+    RowBox[{"NParticles", "->", "N"}]}], "]"}], "\n"}]], "Input",
+ CellChangeTimes->{{3.959936926911949*^9, 3.959936926911949*^9}, {
+  3.959943801215576*^9, 3.959943801903553*^9}},
+ CellLabel->"In[6]:=",ExpressionUUID->"a594bac7-9c73-5a4b-9f26-bc4c428a260e"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Partition Functions\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Single Particle Partition Function Z\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        RowBox[{"2", " ", 
+         RowBox[{"Cosh", "[", 
+          FractionBox[
+           RowBox[{"B", " ", "\[Mu]"}], 
+           RowBox[{"kB", " ", "T"}]], "]"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       TemplateBox[{15},
+        "Spacer1"]},
+      {
+       StyleBox["\<\"Total Partition Function Z^N\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        FractionBox[
+         RowBox[{
+          SuperscriptBox["2", "N"], " ", 
+          SuperscriptBox[
+           RowBox[{"Cosh", "[", 
+            FractionBox[
+             RowBox[{"B", " ", "\[Mu]"}], 
+             RowBox[{"kB", " ", "T"}]], "]"}], "N"]}], 
+         RowBox[{"N", "!"}]],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     DefaultBaseStyle->"Column",
+     GridBoxAlignment->{"Columns" -> {{Left}}},
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{2}}}],
+    "Column"]]}, {2,"\<\"Thermal Quantities\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Internal Energy U\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"B", " ", "\[Mu]", " ", 
+         RowBox[{"Tanh", "[", 
+          FractionBox[
+           RowBox[{"B", " ", "\[Mu]"}], 
+           RowBox[{"kB", " ", "T"}]], "]"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Helmholtz Free Energy F\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", "kB"}], " ", "T", " ", 
+         RowBox[{"Log", "[", 
+          FractionBox[
+           RowBox[{
+            SuperscriptBox["2", "N"], " ", 
+            SuperscriptBox[
+             RowBox[{"Cosh", "[", 
+              FractionBox[
+               RowBox[{"B", " ", "\[Mu]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], "N"]}], 
+           RowBox[{"N", "!"}]], "]"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Entropy S\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"kB", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            RowBox[{
+             SuperscriptBox["2", "N"], " ", 
+             SuperscriptBox[
+              RowBox[{"Cosh", "[", 
+               FractionBox[
+                RowBox[{"B", " ", "\[Mu]"}], 
+                RowBox[{"kB", " ", "T"}]], "]"}], "N"]}], 
+            RowBox[{"N", "!"}]], "]"}]}], "+", 
+         FractionBox[
+          RowBox[{"B", " ", "\[Mu]", " ", 
+           RowBox[{"Tanh", "[", 
+            FractionBox[
+             RowBox[{"B", " ", "\[Mu]"}], 
+             RowBox[{"kB", " ", "T"}]], "]"}]}], "T"]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Heat Capacity C_V\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox[
+          RowBox[{
+           SuperscriptBox["B", "2"], " ", 
+           SuperscriptBox["\[Mu]", "2"], " ", 
+           SuperscriptBox[
+            RowBox[{"Sech", "[", 
+             FractionBox[
+              RowBox[{"B", " ", "\[Mu]"}], 
+              RowBox[{"kB", " ", "T"}]], "]"}], "2"]}], 
+          RowBox[{"kB", " ", 
+           SuperscriptBox["T", "2"]}]]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {3,"\<\"Free Energy Potentials\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Enthalpy H\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"P", " ", "V"}], "+", 
+         RowBox[{"B", " ", "\[Mu]", " ", 
+          RowBox[{"Tanh", "[", 
+           FractionBox[
+            RowBox[{"B", " ", "\[Mu]"}], 
+            RowBox[{"kB", " ", "T"}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Gibbs Free Energy G\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"P", " ", "V"}], "-", 
+         RowBox[{"kB", " ", "T", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            RowBox[{
+             SuperscriptBox["2", "N"], " ", 
+             SuperscriptBox[
+              RowBox[{"Cosh", "[", 
+               FractionBox[
+                RowBox[{"B", " ", "\[Mu]"}], 
+                RowBox[{"kB", " ", "T"}]], "]"}], "N"]}], 
+            RowBox[{"N", "!"}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {4,"\<\"Probability\"\>"->
+  PanelBox[
+   StyleBox[
+    StyleBox["\<\"Probability not defined for Direct method.\"\>",
+     StripOnInput->False,
+     LineColor->RGBColor[1, 0, 0],
+     FrontFaceColor->RGBColor[1, 0, 0],
+     BackFaceColor->RGBColor[1, 0, 0],
+     GraphicsColor->RGBColor[1, 0, 0],
+     FontColor->RGBColor[1, 0, 0]],
+    StripOnInput->False,
+    FontSize->16]]}}, 2]], "Output",
+ CellChangeTimes->{3.9599369295307407`*^9, 3.959943719012472*^9, 
+  3.959943803630232*^9, 3.960107568433384*^9},
+ CellLabel->"Out[6]=",ExpressionUUID->"8e387918-50e2-2f4d-af48-6ff240ffb658"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"PartitionThermo", "[", 
+  RowBox[{
+   RowBox[{
+    FractionBox[
+     SuperscriptBox["p", "2"], 
+     RowBox[{"2", "m"}]], "+", 
+    RowBox[{
+     FractionBox["1", "2"], "m", " ", "\[Omega]", " ", 
+     SuperscriptBox["x", "2"]}]}], ",", 
+   RowBox[{"Method", "->", "\"\<Continuous\>\""}], ",", 
+   RowBox[{"QDomain", "->", 
+    RowBox[{"{", 
+     RowBox[{"x", ",", 
+      RowBox[{"-", "\[Infinity]"}], ",", "\[Infinity]"}], "}"}]}], ",", 
+   RowBox[{"PDomain", "->", 
+    RowBox[{"{", 
+     RowBox[{"p", ",", 
+      RowBox[{"-", "\[Infinity]"}], ",", "Infinity"}], "}"}]}], ",", 
+   RowBox[{"NParticles", "->", "N"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.959942822760025*^9, 3.959942871130909*^9}, {
+  3.9601336241567783`*^9, 3.960133639096493*^9}, {3.960133751025717*^9, 
+  3.9601337514504013`*^9}, {3.96013381825239*^9, 3.9601338441669083`*^9}},
+ CellLabel->"In[7]:=",ExpressionUUID->"e995ec8e-c11c-424b-a561-2332f5694f69"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Partition Functions\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Single Particle Partition Function Z\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        TemplateBox[{
+          FractionBox[
+           RowBox[{"2", " ", "kB", " ", "\[Pi]", " ", "T"}], 
+           RowBox[{"h", " ", 
+             SqrtBox["\[Omega]"]}]], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       TemplateBox[{15},
+        "Spacer1"]},
+      {
+       StyleBox["\<\"Total Partition Function \
+\\!\\(\\*SuperscriptBox[\\(Z\\), \\(N\\)]\\)\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        TemplateBox[{
+          FractionBox[
+           RowBox[{
+             SuperscriptBox[
+              RowBox[{"(", 
+                RowBox[{"2", " ", "\[Pi]"}], ")"}], "N"], " ", 
+             SuperscriptBox[
+              RowBox[{"(", 
+                FractionBox[
+                 RowBox[{"kB", " ", "T"}], 
+                 RowBox[{"h", " ", 
+                   SqrtBox["\[Omega]"]}]], ")"}], "N"]}], 
+           RowBox[{"N", "!"}]], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     DefaultBaseStyle->"Column",
+     GridBoxAlignment->{"Columns" -> {{Left}}},
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{2}}}],
+    "Column"]]}, {2,"\<\"Thermal Quantities\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Internal Energy U\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        TemplateBox[{
+          RowBox[{
+            RowBox[{"-", "kB"}], " ", "T"}], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Helmholtz Free Energy F\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        TemplateBox[{
+          RowBox[{
+            RowBox[{"-", "kB"}], " ", "T", " ", 
+            RowBox[{"Log", "[", 
+              FractionBox[
+               RowBox[{
+                 SuperscriptBox[
+                  RowBox[{"(", 
+                    RowBox[{"2", " ", "\[Pi]"}], ")"}], "N"], " ", 
+                 SuperscriptBox[
+                  RowBox[{"(", 
+                    FractionBox[
+                    RowBox[{"kB", " ", "T"}], 
+                    RowBox[{"h", " ", 
+                    SqrtBox["\[Omega]"]}]], ")"}], "N"]}], 
+               RowBox[{"N", "!"}]], "]"}]}], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Entropy S\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        TemplateBox[{
+          RowBox[{"kB", " ", 
+            RowBox[{"(", 
+              RowBox[{
+                RowBox[{"-", "1"}], "+", 
+                RowBox[{"Log", "[", 
+                  FractionBox[
+                   RowBox[{
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"2", " ", "\[Pi]"}], ")"}], "N"], " ", 
+                    SuperscriptBox[
+                    RowBox[{"(", 
+                    FractionBox[
+                    RowBox[{"kB", " ", "T"}], 
+                    RowBox[{"h", " ", 
+                    SqrtBox["\[Omega]"]}]], ")"}], "N"]}], 
+                   RowBox[{"N", "!"}]], "]"}]}], ")"}]}], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Heat Capacity \\!\\(\\*SubscriptBox[\\(C\\), \\(V\\)]\\)\
+\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        TemplateBox[{
+          RowBox[{"-", "kB"}], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {3,"\<\"Free Energy Potentials\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Enthalpy H\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        TemplateBox[{
+          RowBox[{
+            RowBox[{
+              RowBox[{"-", "kB"}], " ", "T"}], "+", 
+            RowBox[{"P", " ", "V"}]}], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Gibbs Free Energy G\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        TemplateBox[{
+          RowBox[{
+            RowBox[{"P", " ", "V"}], "-", 
+            RowBox[{"kB", " ", "T", " ", 
+              RowBox[{"Log", "[", 
+                FractionBox[
+                 RowBox[{
+                   SuperscriptBox[
+                    RowBox[{"(", 
+                    RowBox[{"2", " ", "\[Pi]"}], ")"}], "N"], " ", 
+                   SuperscriptBox[
+                    RowBox[{"(", 
+                    FractionBox[
+                    RowBox[{"kB", " ", "T"}], 
+                    RowBox[{"h", " ", 
+                    SqrtBox["\[Omega]"]}]], ")"}], "N"]}], 
+                 RowBox[{"N", "!"}]], "]"}]}]}], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {4,"\<\"Probability\"\>"->
+  PanelBox[
+   StyleBox[
+    TagBox[GridBox[{
+       {
+        StyleBox["\<\"P[q_, p_]\"\>",
+         StripOnInput->False,
+         FontWeight->Bold]},
+       {
+        TemplateBox[{
+          FractionBox[
+           RowBox[{
+             SuperscriptBox["\[ExponentialE]", 
+              RowBox[{"-", 
+                FractionBox[
+                 RowBox[{
+                   FractionBox[
+                    SuperscriptBox["p", "2"], 
+                    RowBox[{"2", " ", "m"}]], "+", 
+                   RowBox[{
+                    FractionBox["1", "2"], " ", "m", " ", 
+                    SuperscriptBox["x", "2"], " ", "\[Omega]"}]}], 
+                 RowBox[{"kB", " ", "T"}]]}]], " ", "h", " ", 
+             SqrtBox["\[Omega]"]}], 
+           RowBox[{"2", " ", "kB", " ", "\[Pi]", " ", "T"}]], 
+          RowBox[{
+            RowBox[{"Re", "[", 
+              FractionBox[
+               RowBox[{"m", " ", "\[Omega]"}], 
+               RowBox[{"kB", " ", "T"}]], "]"}], ">", "0"}]},
+         "ConditionalExpression"]}
+      },
+      DefaultBaseStyle->"Column",
+      GridBoxAlignment->{"Columns" -> {{Left}}},
+      GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}}],
+     "Column"],
+    StripOnInput->False,
+    FontSize->16]]}}, 1]], "Output",
+ CellChangeTimes->{
+  3.9599428837618217`*^9, 3.9599437331579857`*^9, 3.9599439413142757`*^9, 
+   3.960107576669199*^9, 3.960133664325289*^9, 3.96013376079739*^9, {
+   3.9601338333318386`*^9, 3.9601338565882072`*^9}},
+ CellLabel->"Out[7]=",ExpressionUUID->"ddd1d184-4097-7844-b49e-0f91b79e77a5"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"PartitionThermo", "[", 
+  RowBox[{
+   SuperscriptBox[
+    RowBox[{"(", 
+     RowBox[{"1", "+", 
+      RowBox[{"Exp", "[", 
+       FractionBox[
+        RowBox[{"-", "En"}], 
+        RowBox[{"kB", " ", "T"}]], "]"}]}], ")"}], "2"], ",", 
+   RowBox[{"Method", "->", "\"\<Direct\>\""}], ",", 
+   RowBox[{"NParticles", "->", "N"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9601075927669277`*^9, 3.9601076289348774`*^9}},
+ CellLabel->"In[9]:=",ExpressionUUID->"8b0c2e47-8646-2440-8bf4-8ac36d3f1a9c"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Partition Functions\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Single Particle Partition Function Z\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        SuperscriptBox[
+         RowBox[{"(", 
+          RowBox[{"1", "+", 
+           SuperscriptBox["\[ExponentialE]", 
+            RowBox[{"-", 
+             FractionBox["En", 
+              RowBox[{"kB", " ", "T"}]]}]]}], ")"}], "2"],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       TemplateBox[{15},
+        "Spacer1"]},
+      {
+       StyleBox["\<\"Total Partition Function Z^N\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold]},
+      {
+       StyleBox[
+        FractionBox[
+         SuperscriptBox[
+          RowBox[{"(", 
+           SuperscriptBox[
+            RowBox[{"(", 
+             RowBox[{"1", "+", 
+              SuperscriptBox["\[ExponentialE]", 
+               RowBox[{"-", 
+                FractionBox["En", 
+                 RowBox[{"kB", " ", "T"}]]}]]}], ")"}], "2"], ")"}], "N"], 
+         RowBox[{"N", "!"}]],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     DefaultBaseStyle->"Column",
+     GridBoxAlignment->{"Columns" -> {{Left}}},
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{Automatic}}, "Rows" -> {{2}}}],
+    "Column"]]}, {2,"\<\"Thermal Quantities\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Internal Energy U\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox[
+          RowBox[{"2", " ", "En"}], 
+          RowBox[{"1", "+", 
+           SuperscriptBox["\[ExponentialE]", 
+            FractionBox["En", 
+             RowBox[{"kB", " ", "T"}]]]}]]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Helmholtz Free Energy F\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", "kB"}], " ", "T", " ", 
+         RowBox[{"Log", "[", 
+          FractionBox[
+           SuperscriptBox[
+            RowBox[{"(", 
+             SuperscriptBox[
+              RowBox[{"(", 
+               RowBox[{"1", "+", 
+                SuperscriptBox["\[ExponentialE]", 
+                 RowBox[{"-", 
+                  FractionBox["En", 
+                   RowBox[{"kB", " ", "T"}]]}]]}], ")"}], "2"], ")"}], "N"], 
+           RowBox[{"N", "!"}]], "]"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Entropy S\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", 
+          FractionBox[
+           RowBox[{"2", " ", "En"}], 
+           RowBox[{"T", "+", 
+            RowBox[{
+             SuperscriptBox["\[ExponentialE]", 
+              FractionBox["En", 
+               RowBox[{"kB", " ", "T"}]]], " ", "T"}]}]]}], "+", 
+         RowBox[{"kB", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            SuperscriptBox[
+             RowBox[{"(", 
+              SuperscriptBox[
+               RowBox[{"(", 
+                RowBox[{"1", "+", 
+                 SuperscriptBox["\[ExponentialE]", 
+                  RowBox[{"-", 
+                   FractionBox["En", 
+                    RowBox[{"kB", " ", "T"}]]}]]}], ")"}], "2"], ")"}], "N"], 
+            RowBox[{"N", "!"}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Heat Capacity C_V\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{"-", 
+         FractionBox[
+          RowBox[{"2", " ", 
+           SuperscriptBox["\[ExponentialE]", 
+            FractionBox["En", 
+             RowBox[{"kB", " ", "T"}]]], " ", 
+           SuperscriptBox["En", "2"]}], 
+          RowBox[{
+           SuperscriptBox[
+            RowBox[{"(", 
+             RowBox[{"1", "+", 
+              SuperscriptBox["\[ExponentialE]", 
+               FractionBox["En", 
+                RowBox[{"kB", " ", "T"}]]]}], ")"}], "2"], " ", "kB", " ", 
+           SuperscriptBox["T", "2"]}]]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {3,"\<\"Free Energy Potentials\"\>"->
+  PanelBox[
+   TagBox[GridBox[{
+      {
+       StyleBox["\<\"Enthalpy H\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"-", 
+          FractionBox[
+           RowBox[{"2", " ", "En"}], 
+           RowBox[{"1", "+", 
+            SuperscriptBox["\[ExponentialE]", 
+             FractionBox["En", 
+              RowBox[{"kB", " ", "T"}]]]}]]}], "+", 
+         RowBox[{"P", " ", "V"}]}],
+        StripOnInput->False,
+        FontSize->16]},
+      {
+       StyleBox["\<\"Gibbs Free Energy G\"\>",
+        StripOnInput->False,
+        FontSize->16,
+        FontWeight->Bold], 
+       StyleBox[
+        RowBox[{
+         RowBox[{"P", " ", "V"}], "-", 
+         RowBox[{"kB", " ", "T", " ", 
+          RowBox[{"Log", "[", 
+           FractionBox[
+            SuperscriptBox[
+             RowBox[{"(", 
+              SuperscriptBox[
+               RowBox[{"(", 
+                RowBox[{"1", "+", 
+                 SuperscriptBox["\[ExponentialE]", 
+                  RowBox[{"-", 
+                   FractionBox["En", 
+                    RowBox[{"kB", " ", "T"}]]}]]}], ")"}], "2"], ")"}], "N"], 
+            RowBox[{"N", "!"}]], "]"}]}]}],
+        StripOnInput->False,
+        FontSize->16]}
+     },
+     AutoDelete->False,
+     GridBoxItemSize->{"Columns" -> {{Automatic}}, "Rows" -> {{Automatic}}},
+     GridBoxSpacings->{"Columns" -> {{2}}, "Rows" -> {{3}}}],
+    "Grid"]]}, {4,"\<\"Probability\"\>"->
+  PanelBox[
+   StyleBox[
+    StyleBox["\<\"Probability not defined for Direct method.\"\>",
+     StripOnInput->False,
+     LineColor->RGBColor[1, 0, 0],
+     FrontFaceColor->RGBColor[1, 0, 0],
+     BackFaceColor->RGBColor[1, 0, 0],
+     GraphicsColor->RGBColor[1, 0, 0],
+     FontColor->RGBColor[1, 0, 0]],
+    StripOnInput->False,
+    FontSize->16]]}}, 1]], "Output",
+ CellChangeTimes->{{3.9601076237175694`*^9, 3.960107630094137*^9}},
+ CellLabel->"Out[9]=",ExpressionUUID->"1cb2cd39-4a5a-c94d-aa5a-07025af64d73"]
+}, Open  ]]
+},
+WindowSize->{1141.2, 568.8},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Magnification:>1. Inherited,
+FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"88129dc7-a0de-b746-a0e6-ddf8a3020565"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 16997, 410, 976, "Input",ExpressionUUID->"db1bbe76-e922-c447-b53a-d92c2172114f"],
+Cell[CellGroupData[{
+Cell[17576, 434, 730, 15, 47, "Input",ExpressionUUID->"52728be5-16fe-6844-85ec-e329218757e6"],
+Cell[18309, 451, 9449, 271, 396, "Output",ExpressionUUID->"a7e0cad7-e763-ef48-9645-a5193e721b6e"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[27795, 727, 724, 18, 47, "Input",ExpressionUUID->"b1ade898-3492-344c-8284-f604e7afca3e"],
+Cell[28522, 747, 6402, 208, 292, "Output",ExpressionUUID->"e921b794-d7ae-7745-a689-1e7793519d86"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[34961, 960, 571, 14, 47, "Input",ExpressionUUID->"a594bac7-9c73-5a4b-9f26-bc4c428a260e"],
+Cell[35535, 976, 5962, 187, 289, "Output",ExpressionUUID->"8e387918-50e2-2f4d-af48-6ff240ffb658"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[41534, 1168, 953, 23, 45, "Input",ExpressionUUID->"e995ec8e-c11c-424b-a561-2332f5694f69"],
+Cell[42490, 1193, 8877, 263, 362, "Output",ExpressionUUID->"ddd1d184-4097-7844-b49e-0f91b79e77a5"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[51404, 1461, 517, 13, 42, "Input",ExpressionUUID->"8b0c2e47-8646-2440-8bf4-8ac36d3f1a9c"],
+Cell[51924, 1476, 6610, 205, 357, "Output",ExpressionUUID->"1cb2cd39-4a5a-c94d-aa5a-07025af64d73"]
+}, Open  ]]
+}
+]
+*)
+

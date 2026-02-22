@@ -1,0 +1,838 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     31608,        830]
+NotebookOptionsPosition[     29671,        789]
+NotebookOutlinePosition[     30106,        806]
+CellTagsIndexPosition[     30063,        803]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"Options", "[", "Quantummodule", "]"}], "=", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"h", "->", "\[HBar]"}], ",", 
+      RowBox[{"mass", "->", "m"}], ",", 
+      RowBox[{"compute", "->", 
+       RowBox[{"{", 
+        RowBox[{"\"\<<x>\>\"", ",", "\"\<<p_x>\>\"", ",", "\"\<<T>\>\"", 
+         ",", "\"\<<H>\>\""}], "}"}]}], ",", 
+      RowBox[{"inferPotential", "->", "False"}], ",", 
+      RowBox[{"energy", "->", "Automatic"}]}], "}"}]}], ";"}], "\n"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Quantummodule", "[", 
+   RowBox[{"Psi_", ",", "coords_List", ",", 
+    RowBox[{"potential_", ":", "0"}], ",", 
+    RowBox[{"OptionsPattern", "[", "]"}]}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"h", "=", 
+       RowBox[{"OptionValue", "[", "h", "]"}]}], ",", 
+      RowBox[{"m", "=", 
+       RowBox[{"OptionValue", "[", "mass", "]"}]}], ",", 
+      RowBox[{"toCompute", "=", 
+       RowBox[{"OptionValue", "[", "compute", "]"}]}], ",", 
+      RowBox[{"inferQ", "=", 
+       RowBox[{"OptionValue", "[", "inferPotential", "]"}]}], ",", "ops", ",",
+       "ynorm", ",", "norm", ",", "normConst", ",", "symbolsinPsi", ",", 
+      "allSymbols", ",", "assumptions", ",", "results", ",", "inferredV", ",",
+       "\[Psi]", ",", "laplacian", ",", "d\[CapitalPsi]t", ",", "timeDepQ", ",",
+       "xvars", ",", "inferred", ",", "Vinternal", ",", "eVal"}], "}"}], ",", 
+    RowBox[{
+     RowBox[{"\[Psi]", "=", "Psi"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Vinternal", "=", "potential"}], ";", 
+     RowBox[{"eVal", "=", 
+      RowBox[{"OptionValue", "[", "energy", "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{"Potential", " ", "inference", " ", "if", " ", "requested"}], 
+      "*)"}], 
+     RowBox[{"If", "[", 
+      RowBox[{
+       RowBox[{"inferQ", "&&", 
+        RowBox[{"potential", "===", "0"}]}], ",", 
+       RowBox[{
+        RowBox[{"xvars", "=", 
+         RowBox[{"First", "/@", "coords"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"timeDepQ", "=", 
+         RowBox[{"Not", "@", 
+          RowBox[{"FreeQ", "[", 
+           RowBox[{"\[Psi]", ",", "t"}], "]"}]}]}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"laplacian", "=", 
+         RowBox[{"Total", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"D", "[", 
+             RowBox[{"\[Psi]", ",", 
+              RowBox[{"{", 
+               RowBox[{"#", ",", "2"}], "}"}]}], "]"}], "&"}], "/@", 
+           "xvars"}], "]"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"If", "[", 
+         RowBox[{"timeDepQ", ",", 
+          RowBox[{
+           RowBox[{"d\[CapitalPsi]t", "=", 
+            RowBox[{"D", "[", 
+             RowBox[{"\[Psi]", ",", "t"}], "]"}]}], ";", 
+           "\[IndentingNewLine]", 
+           RowBox[{"inferred", "=", 
+            RowBox[{"FullSimplify", "[", 
+             RowBox[{
+              RowBox[{"(", 
+               RowBox[{
+                RowBox[{"I", " ", "h", " ", "d\[CapitalPsi]t"}], "+", 
+                RowBox[{
+                 RowBox[{"(", 
+                  RowBox[{
+                   RowBox[{"h", "^", "2"}], "/", 
+                   RowBox[{"(", 
+                    RowBox[{"2", " ", "m"}], ")"}]}], ")"}], " ", 
+                 "laplacian"}]}], ")"}], "/", "\[Psi]"}], "]"}]}], ";"}], ",", 
+          RowBox[{
+           RowBox[{"inferred", "=", 
+            RowBox[{"FullSimplify", "[", 
+             RowBox[{
+              RowBox[{"(", 
+               RowBox[{
+                RowBox[{"h", "^", "2"}], "/", 
+                RowBox[{"(", 
+                 RowBox[{"2", " ", "m"}], ")"}]}], ")"}], " ", 
+              RowBox[{"laplacian", "/", "\[Psi]"}]}], "]"}]}], ";", "\n", 
+           RowBox[{"If", "[", 
+            RowBox[{
+             RowBox[{"eVal", "=!=", "Automatic"}], ",", 
+             RowBox[{
+              RowBox[{"inferred", "+=", "eVal"}], ";", "\[IndentingNewLine]", 
+              RowBox[{"Print", "[", 
+               
+               RowBox[{"\"\<Note: Using user-specified energy E = \>\"", ",", 
+                "eVal"}], "]"}], ";"}]}], "]"}], ";"}]}], "\n", "]"}], ";", 
+        "\[IndentingNewLine]", 
+        RowBox[{"Vinternal", "=", "inferred"}], ";"}]}], "]"}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{"Build", " ", "operators", " ", "dynamically"}], "*)"}], 
+     RowBox[{"ops", "=", 
+      RowBox[{"Association", "[", "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"Do", "[", 
+      RowBox[{
+       RowBox[{"Module", "[", 
+        RowBox[{
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"x", "=", 
+            RowBox[{"coords", "[", 
+             RowBox[{"[", 
+              RowBox[{"i", ",", "1"}], "]"}], "]"}]}], ",", "xstr"}], "}"}], ",", 
+         RowBox[{
+          RowBox[{"xstr", "=", 
+           RowBox[{"ToString", "[", "x", "]"}]}], ";", "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"ops", "[", 
+            RowBox[{"\"\<<\>\"", "<>", "xstr", "<>", "\"\<>\>\""}], "]"}], "=", 
+           RowBox[{"Function", "[", 
+            RowBox[{"\[Psi]", ",", 
+             RowBox[{"x", " ", "\[Psi]"}]}], "]"}]}], ";", 
+          "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"ops", "[", 
+            RowBox[{"\"\<<\>\"", "<>", "xstr", "<>", "\"\<^2>\>\""}], "]"}], "=", 
+           RowBox[{"Function", "[", 
+            RowBox[{"\[Psi]", ",", 
+             RowBox[{
+              RowBox[{"x", "^", "2"}], " ", "\[Psi]"}]}], "]"}]}], ";", 
+          "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"ops", "[", 
+            RowBox[{"\"\<<p_\>\"", "<>", "xstr", "<>", "\"\<>\>\""}], "]"}], "=", 
+           RowBox[{"Function", "[", 
+            RowBox[{"\[Psi]", ",", 
+             RowBox[{
+              RowBox[{"-", "I"}], " ", "h", " ", 
+              RowBox[{"D", "[", 
+               RowBox[{"\[Psi]", ",", "x"}], "]"}]}]}], "]"}]}], ";", 
+          "\[IndentingNewLine]", 
+          RowBox[{
+           RowBox[{"ops", "[", 
+            RowBox[{"\"\<<p_\>\"", "<>", "xstr", "<>", "\"\<^2>\>\""}], "]"}],
+            "=", 
+           RowBox[{"Function", "[", 
+            RowBox[{"\[Psi]", ",", 
+             RowBox[{
+              RowBox[{"-", 
+               RowBox[{"h", "^", "2"}]}], " ", 
+              RowBox[{"D", "[", 
+               RowBox[{"\[Psi]", ",", 
+                RowBox[{"{", 
+                 RowBox[{"x", ",", "2"}], "}"}]}], "]"}]}]}], "]"}]}], 
+          ";"}]}], "]"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"i", ",", 
+         RowBox[{"Length", "[", "coords", "]"}]}], "}"}]}], "]"}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"ops", "[", "\"\<<T>\>\"", "]"}], "=", 
+      RowBox[{"Function", "[", 
+       RowBox[{"\[Psi]", ",", 
+        RowBox[{"Total", "@", 
+         RowBox[{"Table", "[", 
+          RowBox[{
+           RowBox[{
+            RowBox[{
+             RowBox[{"-", 
+              RowBox[{"h", "^", "2"}]}], "/", 
+             RowBox[{"(", 
+              RowBox[{"2", " ", "m"}], ")"}]}], " ", 
+            RowBox[{"D", "[", 
+             RowBox[{"\[Psi]", ",", 
+              RowBox[{"{", 
+               RowBox[{
+                RowBox[{"coords", "[", 
+                 RowBox[{"[", 
+                  RowBox[{"i", ",", "1"}], "]"}], "]"}], ",", "2"}], "}"}]}], 
+             "]"}]}], ",", 
+           RowBox[{"{", 
+            RowBox[{"i", ",", 
+             RowBox[{"Length", "[", "coords", "]"}]}], "}"}]}], "]"}]}]}], 
+       "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"ops", "[", "\"\<<V>\>\"", "]"}], "=", 
+      RowBox[{"Function", "[", 
+       RowBox[{"\[Psi]", ",", 
+        RowBox[{"Vinternal", " ", "\[Psi]"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"ops", "[", "\"\<<H>\>\"", "]"}], "=", 
+      RowBox[{"Function", "[", 
+       RowBox[{"\[Psi]", ",", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"ops", "[", "\"\<<T>\>\"", "]"}], "[", "\[Psi]", "]"}], "+", 
+         RowBox[{
+          RowBox[{"ops", "[", "\"\<<V>\>\"", "]"}], "[", "\[Psi]", "]"}]}]}], 
+       "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"(*", "Assumptions", "*)"}], 
+     RowBox[{"symbolsinPsi", "=", 
+      RowBox[{"DeleteDuplicates", "@", 
+       RowBox[{"Cases", "[", 
+        RowBox[{"\[Psi]", ",", "_Symbol", ",", "All"}], "]"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"allSymbols", "=", 
+      RowBox[{"Union", "[", 
+       RowBox[{"symbolsinPsi", ",", 
+        RowBox[{"First", "/@", "coords"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"assumptions", "=", 
+      RowBox[{"And", "@@", 
+       RowBox[{"Flatten", "[", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{
+           RowBox[{
+            RowBox[{"Element", "[", 
+             RowBox[{"#", ",", "Reals"}], "]"}], "&"}], "/@", "allSymbols"}], 
+          ",", 
+          RowBox[{
+           RowBox[{
+            RowBox[{"Positive", "[", "#", "]"}], "&"}], "/@", 
+           "allSymbols"}]}], "}"}], "]"}]}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"(*", "Normalize", "*)"}], 
+     RowBox[{"norm", "=", 
+      RowBox[{"Integrate", "[", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Conjugate", "[", "\[Psi]", "]"}], " ", "\[Psi]"}], ",", 
+        RowBox[{"Sequence", "@@", "coords"}], ",", 
+        RowBox[{"Assumptions", "->", "assumptions"}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"normConst", "=", 
+      RowBox[{"Assuming", "[", 
+       RowBox[{"assumptions", ",", 
+        RowBox[{"Simplify", "@", 
+         RowBox[{"Refine", "[", 
+          RowBox[{"1", "/", 
+           RowBox[{"Sqrt", "[", "norm", "]"}]}], "]"}]}]}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"ynorm", "=", 
+      RowBox[{"\[Psi]", "*", 
+       RowBox[{"Sqrt", "[", 
+        RowBox[{"normConst", "^", "2"}], "]"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{"Expectation", " ", "values"}], "*)"}], 
+     RowBox[{"results", "=", 
+      RowBox[{"Association", "[", "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"results", "[", "\"\<Normalization Constant\>\"", "]"}], "=", 
+      "normConst"}], ";", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"results", "[", "\"\<Potential\>\"", "]"}], "=", "Vinternal"}], 
+     ";", "\[IndentingNewLine]", 
+     RowBox[{"Do", "[", 
+      RowBox[{
+       RowBox[{"If", "[", 
+        RowBox[{
+         RowBox[{"KeyExistsQ", "[", 
+          RowBox[{"ops", ",", "opID"}], "]"}], ",", 
+         RowBox[{"Module", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{"opApplied", ",", "integrand", ",", "expect"}], "}"}], ",", 
+           RowBox[{
+            RowBox[{"opApplied", "=", 
+             RowBox[{
+              RowBox[{"ops", "[", "opID", "]"}], "[", "ynorm", "]"}]}], ";", 
+            "\[IndentingNewLine]", 
+            RowBox[{"integrand", "=", 
+             RowBox[{
+              RowBox[{"Conjugate", "[", "ynorm", "]"}], " ", "opApplied"}]}], 
+            ";", "\[IndentingNewLine]", 
+            RowBox[{"expect", "=", 
+             RowBox[{"Integrate", "[", 
+              RowBox[{"integrand", ",", 
+               RowBox[{"Sequence", "@@", "coords"}], ",", 
+               RowBox[{"Assumptions", "->", "assumptions"}]}], "]"}]}], ";", 
+            "\[IndentingNewLine]", 
+            RowBox[{
+             RowBox[{"results", "[", "opID", "]"}], "=", 
+             RowBox[{"Assuming", "[", 
+              RowBox[{"assumptions", ",", 
+               RowBox[{"Simplify", "@", 
+                RowBox[{"Refine", "[", "expect", "]"}]}]}], "]"}]}], ";"}]}], 
+          "]"}]}], "]"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"opID", ",", "toCompute"}], "}"}]}], "]"}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"TabView", "[", "results", "]"}]}]}], "]"}]}], "\n"}], "Input",
+ CellChangeTimes->{{3.9585319444440613`*^9, 3.9585319444440613`*^9}, {
+   3.95853220483885*^9, 3.9585322312925663`*^9}, 3.9585323770579567`*^9, 
+   3.9585326064330425`*^9, {3.9585327271110973`*^9, 3.958532767307482*^9}, {
+   3.95855550829846*^9, 3.9585555208392887`*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"aa09f3ab-3098-1348-86f0-fef56430bb04"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"\[Psi]", "[", 
+    RowBox[{"x_", ",", "y_", ",", "z_"}], "]"}], ":=", 
+   RowBox[{
+    RowBox[{"Sin", "[", 
+     FractionBox[
+      RowBox[{"n1", " ", "\[Pi]", " ", "x"}], "a"], "]"}], " ", 
+    RowBox[{"Sin", "[", 
+     FractionBox[
+      RowBox[{"n2", " ", "Pi", " ", "y", " "}], "b"], "]"}], 
+    RowBox[{"Sin", "[", 
+     FractionBox[
+      RowBox[{"n3", " ", "Pi", " ", "z"}], "c"], "]"}]}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Quantummodule", "[", 
+    RowBox[{
+     RowBox[{"\[Psi]", "[", 
+      RowBox[{"x", ",", "y", ",", "z"}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"x", ",", "0", ",", "a"}], "}"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"y", ",", "0", ",", "b"}], "}"}], ",", 
+       RowBox[{"{", 
+        RowBox[{"z", ",", "0", ",", "c"}], "}"}]}], "}"}], ",", "0", ",", 
+     RowBox[{"compute", "->", 
+      RowBox[{"{", 
+       RowBox[{"\"\<<x>\>\"", ",", "\"\<<p_x>\>\"", ",", "\"\<<p_y>\>\""}], 
+       "}"}]}], ",", 
+     RowBox[{"inferPotential", "->", "True"}], ",", 
+     RowBox[{"energy", "->", 
+      FractionBox[
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{
+           SuperscriptBox["a", "2"], " ", 
+           SuperscriptBox["c", "2"], " ", 
+           SuperscriptBox["n2", "2"]}], "+", 
+          RowBox[{
+           SuperscriptBox["b", "2"], " ", 
+           RowBox[{"(", 
+            RowBox[{
+             RowBox[{
+              SuperscriptBox["c", "2"], " ", 
+              SuperscriptBox["n1", "2"]}], "+", 
+             RowBox[{
+              SuperscriptBox["a", "2"], " ", 
+              SuperscriptBox["n3", "2"]}]}], ")"}]}]}], ")"}], " ", 
+        SuperscriptBox["\[Pi]", "2"], " ", 
+        SuperscriptBox["\[HBar]", "2"]}], 
+       RowBox[{"2", " ", 
+        SuperscriptBox["a", "2"], " ", 
+        SuperscriptBox["b", "2"], " ", 
+        SuperscriptBox["c", "2"], " ", "m"}]]}]}], "]"}], "/.", 
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n1", "->", "1"}], ",", 
+     RowBox[{"n2", "->", "1"}], ",", 
+     RowBox[{"n3", "->", "1"}]}], "}"}]}], "//", 
+  "FullSimplify"}], "\n"}], "Input",
+ CellChangeTimes->{{3.958530984224722*^9, 3.958531019088478*^9}, {
+   3.9585310514609623`*^9, 3.958531092963766*^9}, {3.958532407137844*^9, 
+   3.9585324131110992`*^9}, {3.958532532714281*^9, 3.95853258170899*^9}, {
+   3.9585326193002186`*^9, 3.9585326716207314`*^9}, {3.958532702570122*^9, 
+   3.9585327333586597`*^9}, {3.9585327831675434`*^9, 
+   3.9585327857342014`*^9}, {3.9585328705467243`*^9, 3.958532875319475*^9}, {
+   3.9585332371119156`*^9, 3.9585332740254135`*^9}, 3.9585335096597576`*^9, 
+   3.958533563969631*^9, {3.9585336454735794`*^9, 3.9585336481454067`*^9}, 
+   3.9585337175395603`*^9, {3.9585338181073666`*^9, 3.9585338813783207`*^9}, {
+   3.958534013260334*^9, 3.9585340235442505`*^9}, {3.9585342258510456`*^9, 
+   3.958534252613043*^9}, 3.9585357682989044`*^9, 3.95854693187438*^9, {
+   3.9585471129209576`*^9, 3.958547119089777*^9}, {3.9585471702982197`*^9, 
+   3.958547271082079*^9}, {3.9585555246106796`*^9, 3.958555541872841*^9}, {
+   3.958645107356735*^9, 3.958645120458767*^9}},
+ CellLabel->"In[3]:=",ExpressionUUID->"3ea01935-31fb-4949-8034-35cb99cd751a"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Note: Using user-specified energy E = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{
+       RowBox[{
+        SuperscriptBox["a", "2"], " ", 
+        SuperscriptBox["c", "2"], " ", 
+        SuperscriptBox["n2", "2"]}], "+", 
+       RowBox[{
+        SuperscriptBox["b", "2"], " ", 
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{
+           SuperscriptBox["c", "2"], " ", 
+           SuperscriptBox["n1", "2"]}], "+", 
+          RowBox[{
+           SuperscriptBox["a", "2"], " ", 
+           SuperscriptBox["n3", "2"]}]}], ")"}]}]}], ")"}], " ", 
+     SuperscriptBox["\[Pi]", "2"], " ", 
+     SuperscriptBox["\[HBar]", "2"]}], 
+    RowBox[{"2", " ", 
+     SuperscriptBox["a", "2"], " ", 
+     SuperscriptBox["b", "2"], " ", 
+     SuperscriptBox["c", "2"], " ", "m"}]]}],
+  SequenceForm[
+  "Note: Using user-specified energy E = ", 
+   Rational[1, 
+     2] $CellContext`a^(-2) $CellContext`b^(-2) $CellContext`c^(-2) \
+$CellContext`m^(-1) ($CellContext`a^2 $CellContext`c^2 $CellContext`n2^2 + \
+$CellContext`b^2 ($CellContext`c^2 $CellContext`n1^2 + $CellContext`a^2 \
+$CellContext`n3^2)) Pi^2 $CellContext`\[HBar]^2],
+  Editable->False]], "Print",
+ CellChangeTimes->{
+  3.9585469335768757`*^9, 3.9585471202527065`*^9, {3.958547176500864*^9, 
+   3.958547196001585*^9}, {3.9585472292925797`*^9, 3.9585472727414455`*^9}, 
+   3.9585555679877396`*^9, 3.9586451219524097`*^9, 3.9788662615249214`*^9},
+ CellLabel->
+  "During evaluation of \
+In[3]:=",ExpressionUUID->"0a023f47-5317-aa46-ac6a-a83ec6d1818d"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Normalization Constant\"\>"->
+  FractionBox[
+   RowBox[{"2", " ", 
+    SqrtBox["2"]}], 
+   SqrtBox[
+    RowBox[{"a", " ", "b", " ", "c"}]]]}, {2,"\<\"Potential\"\>"->"0"}, {
+  3,"\<\"<x>\"\>"->
+  FractionBox["a", "2"]}, {4,"\<\"<p_x>\"\>"->"0"}, {5,"\<\"<p_y>\"\>"->"0"}},
+   1]], "Output",
+ CellChangeTimes->{
+  3.9585352371165657`*^9, 3.958545894741783*^9, 3.958546940821892*^9, 
+   3.9585471375534782`*^9, {3.9585471791876736`*^9, 3.958547254970129*^9}, 
+   3.9585473081009254`*^9, 3.9585556068101826`*^9, 3.958645161293295*^9, 
+   3.978866297236063*^9},
+ CellLabel->"Out[4]=",ExpressionUUID->"1c8022e6-efc1-1044-9814-0b1bb52e235d"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"Psi", "[", "x_", "]"}], ":=", 
+   RowBox[{"Exp", "[", 
+    RowBox[{
+     RowBox[{"-", " ", 
+      FractionBox[
+       RowBox[{"m", " ", "\[Omega]"}], 
+       RowBox[{"2", " ", "\[HBar]"}]]}], 
+     SuperscriptBox["x", "2"]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"Quantummodule", "[", 
+   RowBox[{
+    RowBox[{"Psi", "[", "x", "]"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", 
+       RowBox[{"-", "\[Infinity]"}], ",", "\[Infinity]"}], "}"}], "}"}], ",", 
+    "0", ",", 
+    RowBox[{"compute", "->", 
+     RowBox[{"{", "\"\<<x>\>\"", "}"}]}], ",", 
+    RowBox[{"inferPotential", "->", "True"}], ",", 
+    RowBox[{"energy", "->", 
+     RowBox[{
+      FractionBox["1", "2"], "\[HBar]", " ", "\[Omega]"}]}]}], "]"}], "//", 
+  "FullSimplify"}]}], "Input",
+ CellChangeTimes->{{3.9585342797409363`*^9, 3.958534367932188*^9}, {
+  3.9585350449549484`*^9, 3.9585351279209347`*^9}, {3.9585469500519466`*^9, 
+  3.958546977325447*^9}, {3.958547327493101*^9, 3.9585473307624264`*^9}, {
+  3.9585555562930527`*^9, 3.958555559180723*^9}},
+ CellLabel->"In[5]:=",ExpressionUUID->"a021613e-dc52-b44a-9d40-866d175582db"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Note: Using user-specified energy E = \"\>", "\[InvisibleSpace]", 
+   FractionBox[
+    RowBox[{"\[Omega]", " ", "\[HBar]"}], "2"]}],
+  SequenceForm[
+  "Note: Using user-specified energy E = ", 
+   Rational[1, 2] $CellContext`\[Omega] $CellContext`\[HBar]],
+  Editable->False]], "Print",
+ CellChangeTimes->{3.958546979756262*^9, 3.958547331945591*^9, 
+  3.9585556070541058`*^9, 3.9788662974629307`*^9},
+ CellLabel->
+  "During evaluation of \
+In[5]:=",ExpressionUUID->"33510e98-ded9-fc4e-8c37-e3a89c23694d"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Normalization Constant\"\>"->
+  FractionBox[
+   SuperscriptBox[
+    RowBox[{"(", 
+     FractionBox[
+      RowBox[{"m", " ", "\[Omega]"}], "\[HBar]"], ")"}], 
+    RowBox[{"1", "/", "4"}]], 
+   SuperscriptBox["\[Pi]", 
+    RowBox[{"1", "/", "4"}]]]}, {2,"\<\"Potential\"\>"->
+  RowBox[{
+   FractionBox["1", "2"], " ", "m", " ", 
+   SuperscriptBox["x", "2"], " ", 
+   SuperscriptBox["\[Omega]", "2"]}]}, {3,"\<\"<x>\"\>"->"0"}}, 2]], "Output",
+ CellChangeTimes->{3.958534372206791*^9, 3.958535252205782*^9, 
+  3.958545895409857*^9, 3.95854698030879*^9, 3.9585473327165833`*^9, 
+  3.9585556077860527`*^9, 3.978866298154001*^9},
+ CellLabel->"Out[6]=",ExpressionUUID->"c21779a9-f644-5f49-978d-f202f49a7080"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"Psi2", "[", 
+    RowBox[{"x_", ",", "t_"}], "]"}], ":=", 
+   RowBox[{"Exp", "[", 
+    RowBox[{
+     RowBox[{"-", "a"}], 
+     RowBox[{"(", 
+      RowBox[{
+       FractionBox[
+        RowBox[{"m", " ", 
+         SuperscriptBox["x", "2"]}], 
+        SuperscriptBox["\[HBar]", "2"]], "+", 
+       RowBox[{"I", " ", "t"}]}], ")"}]}], "]"}]}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{"Quantummodule", "[", 
+   RowBox[{
+    RowBox[{"Psi2", "[", 
+     RowBox[{"x", ",", "t"}], "]"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", 
+       RowBox[{"-", "\[Infinity]"}], ",", "\[Infinity]"}], "}"}], "}"}], ",", 
+    "0", ",", 
+    RowBox[{"compute", "->", 
+     RowBox[{"{", "\"\<<x>\>\"", "}"}]}], ",", 
+    RowBox[{"inferPotential", "->", "True"}], ",", 
+    RowBox[{"energy", "->", 
+     RowBox[{"(", 
+      RowBox[{"a", "-", "\[HBar]"}], ")"}]}]}], "]"}], "//", 
+  "FullSimplify"}]}], "Input",
+ CellChangeTimes->{
+  3.958538084735792*^9, 3.958538248687868*^9, {3.95854701306229*^9, 
+   3.958547079111149*^9}, {3.9585473418588047`*^9, 3.9585473450595512`*^9}, {
+   3.9585555625205593`*^9, 3.9585555659342003`*^9}},
+ CellLabel->"In[7]:=",ExpressionUUID->"a3ecabf1-2a53-8e4f-8807-759a1c672745"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Normalization Constant\"\>"->
+  FractionBox[
+   RowBox[{
+    SuperscriptBox[
+     RowBox[{"(", 
+      RowBox[{"a", " ", "m"}], ")"}], 
+     RowBox[{"1", "/", "4"}]], " ", 
+    SuperscriptBox[
+     RowBox[{"(", 
+      FractionBox["2", "\[Pi]"], ")"}], 
+     RowBox[{"1", "/", "4"}]]}], 
+   SqrtBox["\[HBar]"]]}, {2,"\<\"Potential\"\>"->
+  RowBox[{"a", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"-", "1"}], "+", 
+     FractionBox[
+      RowBox[{"2", " ", "a", " ", "m", " ", 
+       SuperscriptBox["x", "2"]}], 
+      SuperscriptBox["\[HBar]", "2"]], "+", "\[HBar]"}], ")"}]}]}, {
+  3,"\<\"<x>\"\>"->"0"}}, 1]], "Output",
+ CellChangeTimes->{
+  3.958538132683283*^9, 3.9585381974521046`*^9, 3.958545895822405*^9, 
+   3.958547018723301*^9, {3.958547051761959*^9, 3.9585470800855465`*^9}, 
+   3.958547346299814*^9, 3.958555608476364*^9, 3.9788662988193073`*^9},
+ CellLabel->"Out[8]=",ExpressionUUID->"66908e2c-ffa7-6f4f-b806-7d0e953c0a19"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"psi3", "[", "x_", "]"}], ":=", 
+   RowBox[{"Cos", "[", 
+    FractionBox[
+     RowBox[{"n", " ", "Pi", " ", "x"}], 
+     RowBox[{"2", " ", "m", " ", "a"}]], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Quantummodule", "[", 
+    RowBox[{
+     RowBox[{"psi3", "[", "x", "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"{", 
+       RowBox[{"x", ",", 
+        RowBox[{
+         RowBox[{"-", "m"}], " ", "a"}], ",", 
+        RowBox[{"m", " ", "a"}]}], "}"}], "}"}], ",", "0", ",", 
+     RowBox[{"compute", "->", 
+      RowBox[{"{", 
+       RowBox[{"\"\<<x>\>\"", ",", "\"\<<H>\>\""}], "}"}]}], ",", 
+     RowBox[{"inferPotential", "->", "False"}], ",", 
+     RowBox[{"energy", "->", "Automatic"}]}], "]"}], "/.", 
+   RowBox[{"{", 
+    RowBox[{"n", "->", "1"}], "}"}]}], "//", "FullSimplify"}]}], "Input",
+ CellChangeTimes->{{3.9586411243982353`*^9, 3.958641215566204*^9}, {
+  3.9586412497001133`*^9, 3.9586412537546177`*^9}, {3.9586449416294193`*^9, 
+  3.9586450309880657`*^9}, {3.9591449571766663`*^9, 3.9591449715328293`*^9}, {
+  3.9591457528753357`*^9, 3.95914575762545*^9}, {3.959145894121887*^9, 
+  3.9591458974875145`*^9}, {3.9591461033703346`*^9, 3.959146104582777*^9}, {
+  3.9591461393121815`*^9, 3.9591461419052467`*^9}},
+ CellLabel->"In[9]:=",ExpressionUUID->"229b3803-f3bd-3d4c-a0bf-44426f82a433"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Normalization Constant\"\>"->
+  FractionBox["1", 
+   SqrtBox[
+    RowBox[{"a", " ", "m"}]]]}, {2,"\<\"Potential\"\>"->"0"}, {
+  3,"\<\"<x>\"\>"->"0"}, {4,"\<\"<H>\"\>"->
+  FractionBox[
+   RowBox[{
+    SuperscriptBox["\[Pi]", "2"], " ", 
+    SuperscriptBox["\[HBar]", "2"]}], 
+   RowBox[{"8", " ", 
+    SuperscriptBox["a", "2"], " ", 
+    SuperscriptBox["m", "3"]}]]}}, 1]], "Output",
+ CellChangeTimes->{{3.9586412290946198`*^9, 3.958641255021593*^9}, {
+   3.9586449570639935`*^9, 3.958644980003195*^9}, {3.958645013584526*^9, 
+   3.9586450390068226`*^9}, {3.9591449502839737`*^9, 3.9591449759336834`*^9}, 
+   3.959146129689844*^9, 3.9788663037816963`*^9},
+ CellLabel->"Out[10]=",ExpressionUUID->"3e330ff3-711d-3d41-8885-ae8f297c8785"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"psi4", "[", "x_", "]"}], ":=", 
+   RowBox[{"Sin", "[", 
+    FractionBox[
+     RowBox[{"n", " ", "Pi", " ", "x"}], 
+     RowBox[{"m", " ", "a"}]], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Quantummodule", "[", 
+    RowBox[{
+     RowBox[{"psi4", "[", "x", "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"{", 
+       RowBox[{"x", ",", "0", ",", 
+        RowBox[{"m", " ", "a"}]}], "}"}], "}"}], ",", "0", ",", 
+     RowBox[{"compute", "->", 
+      RowBox[{"{", 
+       RowBox[{"\"\<<x>\>\"", ",", "\"\<<H>\>\""}], "}"}]}], ",", 
+     RowBox[{"inferPotential", "->", "False"}], ",", 
+     RowBox[{"energy", "->", "Automatic"}]}], "]"}], "/.", 
+   RowBox[{"{", 
+    RowBox[{"n", "->", "1"}], "}"}]}], "//", "FullSimplify"}]}], "Input",
+ CellChangeTimes->{{3.9591449906122246`*^9, 3.9591449983313313`*^9}, {
+  3.9591452293530273`*^9, 3.9591452452765636`*^9}, {3.959145293589325*^9, 
+  3.959145296990984*^9}, {3.9591453403883057`*^9, 3.9591453435053806`*^9}, {
+  3.959145376325962*^9, 3.9591453794588737`*^9}, {3.959145457368801*^9, 
+  3.9591454862164783`*^9}, {3.9591457128683147`*^9, 3.959145731704752*^9}, {
+  3.9591460980091896`*^9, 3.959146098329775*^9}},
+ CellLabel->"In[11]:=",ExpressionUUID->"6f193ef5-8c33-8340-94dd-f58175ce937a"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Normalization Constant\"\>"->
+  FractionBox[
+   SqrtBox["2"], 
+   SqrtBox[
+    RowBox[{"a", " ", "m"}]]]}, {2,"\<\"Potential\"\>"->"0"}, {
+  3,"\<\"<x>\"\>"->
+  FractionBox[
+   RowBox[{"a", " ", "m"}], "2"]}, {4,"\<\"<H>\"\>"->
+  FractionBox[
+   RowBox[{
+    SuperscriptBox["\[Pi]", "2"], " ", 
+    SuperscriptBox["\[HBar]", "2"]}], 
+   RowBox[{"2", " ", 
+    SuperscriptBox["a", "2"], " ", 
+    SuperscriptBox["m", "3"]}]]}}, 1]], "Output",
+ CellChangeTimes->{
+  3.9591450037060165`*^9, {3.959145236844988*^9, 3.9591452539560757`*^9}, 
+   3.959145301603161*^9, 3.9591453468397255`*^9, 3.959145384770691*^9, 
+   3.9591454648601513`*^9, 3.9591454949087753`*^9, {3.9591457206739807`*^9, 
+   3.9591457362921276`*^9}, 3.978866307491749*^9},
+ CellLabel->"Out[12]=",ExpressionUUID->"95499db1-9e89-6a4f-8bed-6b10b98c62b2"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"psi5", "[", "x_", "]"}], ":=", 
+   RowBox[{"Exp", "[", 
+    RowBox[{
+     RowBox[{"-", "a"}], " ", 
+     SuperscriptBox["x", "2"], " ", 
+     RowBox[{"Sqrt", "[", "k", "]"}]}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"Quantummodule", "[", 
+    RowBox[{
+     RowBox[{"psi5", "[", "x", "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"{", 
+       RowBox[{"x", ",", 
+        RowBox[{"-", "Infinity"}], ",", "Infinity"}], "}"}], "}"}], ",", 
+     RowBox[{
+      FractionBox["1", "2"], "k", " ", 
+      SuperscriptBox["x", "2"]}], ",", 
+     RowBox[{"compute", "->", 
+      RowBox[{"{", 
+       RowBox[{"\"\<<x>\>\"", ",", "\"\<<H>\>\""}], "}"}]}], ",", 
+     RowBox[{"inferPotential", "->", "False"}], ",", 
+     RowBox[{"energy", "->", "Automatic"}]}], "]"}], "/.", 
+   RowBox[{"{", 
+    RowBox[{"n", "->", "1"}], "}"}]}], "//", "FullSimplify"}]}], "Input",
+ CellChangeTimes->{{3.9788663100603046`*^9, 3.9788664427892075`*^9}, {
+   3.9788664847250614`*^9, 3.9788665033931656`*^9}, 3.9788665997723694`*^9, 
+   3.9788668091780586`*^9},
+ CellLabel->"In[22]:=",ExpressionUUID->"49020d6c-6bcf-784f-b602-d3fdec04ab1d"],
+
+Cell[BoxData[
+ TabViewBox[{{1,"\<\"Normalization Constant\"\>"->
+  RowBox[{
+   SuperscriptBox["a", 
+    RowBox[{"1", "/", "4"}]], " ", 
+   SuperscriptBox["k", 
+    RowBox[{"1", "/", "8"}]], " ", 
+   SuperscriptBox[
+    RowBox[{"(", 
+     FractionBox["2", "\[Pi]"], ")"}], 
+    RowBox[{"1", "/", "4"}]]}]}, {2,"\<\"Potential\"\>"->
+  FractionBox[
+   RowBox[{"k", " ", 
+    SuperscriptBox["x", "2"]}], "2"]}, {3,"\<\"<x>\"\>"->"0"}, {
+  4,"\<\"<H>\"\>"->
+  FractionBox[
+   RowBox[{
+    SqrtBox["k"], " ", 
+    RowBox[{"(", 
+     RowBox[{"m", "+", 
+      RowBox[{"4", " ", 
+       SuperscriptBox["a", "2"], " ", 
+       SuperscriptBox["\[HBar]", "2"]}]}], ")"}]}], 
+   RowBox[{"8", " ", "a", " ", "m"}]]}}, 1]], "Output",
+ CellChangeTimes->{3.978866478973917*^9, 3.978866519999218*^9, 
+  3.978866605979042*^9, 3.978866816208992*^9},
+ CellLabel->"Out[23]=",ExpressionUUID->"9987dd03-294a-6046-a0c8-6ac30259a8f8"]
+}, Open  ]]
+},
+WindowSize->{1141.2, 568.8},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Magnification:>0.8 Inherited,
+FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"9cac0a04-0f4b-284f-93e9-18f9fd1353e4"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 12233, 306, 601, "Input",ExpressionUUID->"aa09f3ab-3098-1348-86f0-fef56430bb04"],
+Cell[CellGroupData[{
+Cell[12812, 330, 3251, 79, 104, "Input",ExpressionUUID->"3ea01935-31fb-4949-8034-35cb99cd751a"],
+Cell[16066, 411, 1602, 41, 34, "Print",ExpressionUUID->"0a023f47-5317-aa46-ac6a-a83ec6d1818d"],
+Cell[17671, 454, 670, 15, 88, "Output",ExpressionUUID->"1c8022e6-efc1-1044-9814-0b1bb52e235d"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[18378, 474, 1196, 31, 64, "Input",ExpressionUUID->"a021613e-dc52-b44a-9d40-866d175582db"],
+Cell[19577, 507, 554, 13, 30, "Print",ExpressionUUID->"33510e98-ded9-fc4e-8c37-e3a89c23694d"],
+Cell[20134, 522, 736, 17, 90, "Output",ExpressionUUID->"c21779a9-f644-5f49-978d-f202f49a7080"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[20907, 544, 1249, 36, 56, "Input",ExpressionUUID->"a3ecabf1-2a53-8e4f-8807-759a1c672745"],
+Cell[22159, 582, 976, 26, 92, "Output",ExpressionUUID->"66908e2c-ffa7-6f4f-b806-7d0e953c0a19"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[23172, 613, 1376, 32, 52, "Input",ExpressionUUID->"229b3803-f3bd-3d4c-a0bf-44426f82a433"],
+Cell[24551, 647, 769, 17, 86, "Output",ExpressionUUID->"3e330ff3-711d-3d41-8885-ae8f297c8785"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25357, 669, 1310, 30, 52, "Input",ExpressionUUID->"6f193ef5-8c33-8340-94dd-f58175ce937a"],
+Cell[26670, 701, 850, 21, 88, "Output",ExpressionUUID->"95499db1-9e89-6a4f-8bed-6b10b98c62b2"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[27557, 727, 1187, 31, 53, "Input",ExpressionUUID->"49020d6c-6bcf-784f-b602-d3fdec04ab1d"],
+Cell[28747, 760, 908, 26, 107, "Output",ExpressionUUID->"9987dd03-294a-6046-a0c8-6ac30259a8f8"]
+}, Open  ]]
+}
+]
+*)
+

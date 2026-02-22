@@ -1,0 +1,362 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Wolfram 14.2' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       154,          7]
+NotebookDataLength[     12917,        354]
+NotebookOptionsPosition[     11887,        328]
+NotebookOutlinePosition[     12292,        344]
+CellTagsIndexPosition[     12249,        341]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ClearAll", "[", "FourierSeriesModule", "]"}], ";"}], "\n", 
+ RowBox[{
+  RowBox[{
+   RowBox[{
+    RowBox[{"Options", "[", "FourierSeriesModule", "]"}], "=", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"IndexSymbol", "->", "n"}], ",", 
+      RowBox[{"MaxSimplify", "->", "True"}]}], "}"}]}], ";"}], 
+  "\[IndentingNewLine]"}], "\n", 
+ RowBox[{
+  RowBox[{"FourierSeriesModule", "[", 
+   RowBox[{"f_", ",", 
+    RowBox[{"{", 
+     RowBox[{"x_", ",", "a_", ",", "b_"}], "}"}], ",", 
+    RowBox[{"OptionsPattern", "[", "]"}]}], "]"}], ":=", 
+  RowBox[{"Module", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"idx", "=", 
+       RowBox[{"OptionValue", "[", "IndexSymbol", "]"}]}], ",", 
+      RowBox[{"doSimplify", "=", 
+       RowBox[{"OptionValue", "[", "MaxSimplify", "]"}]}], ",", "T", ",", 
+      "\[Omega]", ",", "A0", ",", "an", ",", "bn", ",", "simpAssumps", ",", 
+      "seriesExpr", ",", "replacementRules"}], "}"}], ",", 
+    RowBox[{
+     RowBox[{"T", "=", 
+      RowBox[{"b", "-", "a"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"\[Omega]", "=", 
+      RowBox[{"2", " ", 
+       RowBox[{"Pi", "/", "T"}]}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"(*", "Coefficients", "*)"}], 
+     RowBox[{"A0", "=", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"2", "/", "T"}], ")"}], " ", 
+       RowBox[{"Integrate", "[", 
+        RowBox[{"f", ",", 
+         RowBox[{"{", 
+          RowBox[{"x", ",", "a", ",", "b"}], "}"}]}], "]"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"an", "=", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"2", "/", "T"}], ")"}], " ", 
+       RowBox[{"Integrate", "[", 
+        RowBox[{
+         RowBox[{"f", "*", 
+          RowBox[{"Cos", "[", 
+           RowBox[{"idx", "*", "\[Omega]", "*", 
+            RowBox[{"(", 
+             RowBox[{"x", "-", "a"}], ")"}]}], "]"}]}], ",", 
+         RowBox[{"{", 
+          RowBox[{"x", ",", "a", ",", "b"}], "}"}]}], "]"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"bn", "=", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"2", "/", "T"}], ")"}], " ", 
+       RowBox[{"Integrate", "[", 
+        RowBox[{
+         RowBox[{"f", "*", 
+          RowBox[{"Sin", "[", 
+           RowBox[{"idx", "*", "\[Omega]", "*", 
+            RowBox[{"(", 
+             RowBox[{"x", "-", "a"}], ")"}]}], "]"}]}], ",", 
+         RowBox[{"{", 
+          RowBox[{"x", ",", "a", ",", "b"}], "}"}]}], "]"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"simpAssumps", "=", 
+      RowBox[{"Element", "[", 
+       RowBox[{"idx", ",", "Integers"}], "]"}]}], ";", "\[IndentingNewLine]", 
+     RowBox[{"replacementRules", "=", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"Cos", "[", 
+          RowBox[{"Pi", " ", "idx"}], "]"}], ":>", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"-", "1"}], ")"}], "^", "idx"}]}], ",", 
+        RowBox[{
+         RowBox[{"Sin", "[", 
+          RowBox[{"Pi", " ", "idx"}], "]"}], ":>", "0"}]}], "}"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"If", "[", 
+      RowBox[{
+       RowBox[{"TrueQ", "[", "doSimplify", "]"}], ",", 
+       RowBox[{
+        RowBox[{"A0", "=", 
+         RowBox[{
+          RowBox[{"Simplify", "[", 
+           RowBox[{"A0", ",", 
+            RowBox[{"Assumptions", "->", "simpAssumps"}]}], "]"}], "/.", " ", 
+          "replacementRules"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"an", "=", 
+         RowBox[{
+          RowBox[{"Simplify", "[", 
+           RowBox[{"an", ",", 
+            RowBox[{"Assumptions", "->", "simpAssumps"}]}], "]"}], "/.", " ", 
+          "replacementRules"}]}], ";", "\[IndentingNewLine]", 
+        RowBox[{"bn", "=", 
+         RowBox[{
+          RowBox[{"Simplify", "[", 
+           RowBox[{"bn", ",", 
+            RowBox[{"Assumptions", "->", "simpAssumps"}]}], "]"}], "/.", " ", 
+          "replacementRules"}]}], ";"}]}], "]"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"(*", 
+      RowBox[{"Build", " ", 
+       RowBox[{"series", ":", 
+        RowBox[{
+        "omit", " ", "terms", " ", "if", " ", "coeffs", " ", "are", " ", 
+         "0"}]}]}], "*)"}], 
+     RowBox[{"seriesExpr", "=", 
+      RowBox[{"Inactivate", "[", 
+       RowBox[{
+        RowBox[{"A0", "/", "2"}], ",", "Sum"}], "]"}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"If", "[", 
+      RowBox[{
+       RowBox[{"an", "=!=", "0"}], ",", 
+       RowBox[{
+        RowBox[{"seriesExpr", "+=", 
+         RowBox[{"Inactivate", "[", 
+          RowBox[{
+           RowBox[{"Sum", "[", 
+            RowBox[{
+             RowBox[{"an", "*", 
+              RowBox[{"Cos", "[", 
+               RowBox[{"idx", "*", "\[Omega]", "*", 
+                RowBox[{"(", 
+                 RowBox[{"x", "-", "a"}], ")"}]}], "]"}]}], ",", 
+             RowBox[{"{", 
+              RowBox[{"idx", ",", "1", ",", "Infinity"}], "}"}]}], "]"}], ",",
+            "Sum"}], "]"}]}], ";"}]}], "]"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"If", "[", 
+      RowBox[{
+       RowBox[{"bn", "=!=", "0"}], ",", 
+       RowBox[{
+        RowBox[{"seriesExpr", "+=", 
+         RowBox[{"Inactivate", "[", 
+          RowBox[{
+           RowBox[{"Sum", "[", 
+            RowBox[{
+             RowBox[{"bn", "*", 
+              RowBox[{"Sin", "[", 
+               RowBox[{"idx", "*", "\[Omega]", "*", 
+                RowBox[{"(", 
+                 RowBox[{"x", "-", "a"}], ")"}]}], "]"}]}], ",", 
+             RowBox[{"{", 
+              RowBox[{"idx", ",", "1", ",", "Infinity"}], "}"}]}], "]"}], ",",
+            "Sum"}], "]"}]}], ";"}]}], "]"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"<|", 
+      RowBox[{
+       RowBox[{"\"\<\!\(\*SubscriptBox[\(A\), \(\\\ \(0\)\)]\)\>\"", "->", 
+        "A0"}], ",", 
+       RowBox[{"\"\<\!\(\*SubscriptBox[\(A\), \(\\\ \(n\)\)]\)\>\"", "->", 
+        "an"}], ",", 
+       RowBox[{"\"\<\!\(\*SubscriptBox[\(B\), \(n\)]\)\>\"", "->", "bn"}], ",", 
+       RowBox[{"\"\<SeriesInactive\>\"", "->", "seriesExpr"}]}], "|>"}]}]}], 
+   "]"}]}], "\n", 
+ RowBox[{" "}]}], "Input",
+ CellChangeTimes->{{3.9680413150347576`*^9, 3.9680413656787815`*^9}, {
+  3.968042119444643*^9, 3.968042131313471*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"70a4f575-edca-544d-bc24-e6c8d1db351a"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"FourierSeriesModule", "[", 
+   RowBox[{
+    RowBox[{"x", "^", "2"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"x", ",", 
+      RowBox[{"-", "L"}], ",", "L"}], "}"}]}], "]"}], "\n"}]], "Input",
+ CellChangeTimes->{{3.968041328807234*^9, 3.968041328807234*^9}},
+ CellLabel->"In[4]:=",ExpressionUUID->"a415a148-e4d6-a240-85ef-17b44e72773f"],
+
+Cell[BoxData[
+ RowBox[{"\[LeftAssociation]", 
+  RowBox[{
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(A\\), \\(\\\\ \\(0\\)\\)]\\)\"\>", "\[Rule]", 
+    FractionBox[
+     RowBox[{"2", " ", 
+      SuperscriptBox["L", "2"]}], "3"]}], ",", 
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(A\\), \\(\\\\ \\(n\\)\\)]\\)\"\>", "\[Rule]", 
+    FractionBox[
+     RowBox[{"4", " ", 
+      SuperscriptBox["L", "2"]}], 
+     RowBox[{
+      SuperscriptBox["n", "2"], " ", 
+      SuperscriptBox["\[Pi]", "2"]}]]}], ",", 
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(B\\), \\(n\\)]\\)\"\>", "\[Rule]", 
+    "0"}], ",", 
+   RowBox[{"\<\"SeriesInactive\"\>", "\[Rule]", 
+    RowBox[{
+     FractionBox[
+      SuperscriptBox["L", "2"], "3"], "+", 
+     TemplateBox[{
+       FractionBox[
+        RowBox[{"4", " ", 
+          SuperscriptBox["L", "2"], " ", 
+          RowBox[{"Cos", "[", 
+            FractionBox[
+             RowBox[{"n", " ", "\[Pi]", " ", 
+               RowBox[{"(", 
+                 RowBox[{"L", "+", "x"}], ")"}]}], "L"], "]"}]}], 
+        RowBox[{
+          SuperscriptBox["n", "2"], " ", 
+          SuperscriptBox["\[Pi]", "2"]}]], "n", "1", "\[Infinity]"},
+      "InactiveSum",
+      DisplayFunction->(RowBox[{
+         UnderoverscriptBox[
+          StyleBox["\[Sum]", "Inactive"], 
+          RowBox[{#2, "=", #3}], #4], #}]& ),
+      InterpretationFunction->(RowBox[{
+         RowBox[{"Inactive", "[", "Sum", "]"}], "[", 
+         RowBox[{#, ",", 
+           RowBox[{"{", 
+             RowBox[{#2, ",", #3, ",", #4}], "}"}]}], "]"}]& )]}]}]}], 
+  "\[RightAssociation]"}]], "Output",
+ CellChangeTimes->{{3.9680413312705364`*^9, 3.9680413732888527`*^9}, {
+   3.968042127679468*^9, 3.968042138114916*^9}, 3.9680538968878*^9},
+ CellLabel->"Out[4]=",ExpressionUUID->"3e32045e-effc-b649-bd37-c4d224b686eb"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"FourierSeriesModule", "[", 
+  RowBox[{"x", ",", 
+   RowBox[{"{", 
+    RowBox[{"x", ",", 
+     RowBox[{"-", "L"}], ",", "L"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9680413893947353`*^9, 3.968041424812231*^9}},
+ CellLabel->"In[5]:=",ExpressionUUID->"bc853e48-cddd-774d-9bb8-1c137d616bc6"],
+
+Cell[BoxData[
+ RowBox[{"\[LeftAssociation]", 
+  RowBox[{
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(A\\), \\(\\\\ \\(0\\)\\)]\\)\"\>", "\[Rule]",
+     "0"}], ",", 
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(A\\), \\(\\\\ \\(n\\)\\)]\\)\"\>", "\[Rule]",
+     "0"}], ",", 
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(B\\), \\(n\\)]\\)\"\>", "\[Rule]", 
+    RowBox[{"-", 
+     FractionBox[
+      RowBox[{"2", " ", "L"}], 
+      RowBox[{"n", " ", "\[Pi]"}]]}]}], ",", 
+   RowBox[{"\<\"SeriesInactive\"\>", "\[Rule]", 
+    TemplateBox[{
+      RowBox[{"-", 
+        FractionBox[
+         RowBox[{"2", " ", "L", " ", 
+           RowBox[{"Sin", "[", 
+             FractionBox[
+              RowBox[{"n", " ", "\[Pi]", " ", 
+                RowBox[{"(", 
+                  RowBox[{"L", "+", "x"}], ")"}]}], "L"], "]"}]}], 
+         RowBox[{"n", " ", "\[Pi]"}]]}], "n", "1", "\[Infinity]"},
+     "InactiveSum",
+     DisplayFunction->(RowBox[{
+        UnderoverscriptBox[
+         StyleBox["\[Sum]", "Inactive"], 
+         RowBox[{#2, "=", #3}], #4], #}]& ),
+     InterpretationFunction->(RowBox[{
+        RowBox[{"Inactive", "[", "Sum", "]"}], "[", 
+        RowBox[{#, ",", 
+          RowBox[{"{", 
+            RowBox[{#2, ",", #3, ",", #4}], "}"}]}], "]"}]& )]}]}], 
+  "\[RightAssociation]"}]], "Output",
+ CellChangeTimes->{{3.9680414159236355`*^9, 3.968041426412451*^9}, 
+   3.9680421413480377`*^9, 3.968053897555155*^9},
+ CellLabel->"Out[5]=",ExpressionUUID->"be9ae25f-bc57-3044-acf4-de148871b76f"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"FourierSeriesModule", "[", 
+  RowBox[{
+   SuperscriptBox[
+    RowBox[{"Cos", "[", "x", "]"}], "4"], ",", 
+   RowBox[{"{", 
+    RowBox[{"x", ",", "0", ",", 
+     RowBox[{"2", " ", "Pi"}]}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.9680539125203*^9, 3.9680539313047943`*^9}},
+ CellLabel->"In[6]:=",ExpressionUUID->"dc9fb525-24fc-a74d-817f-68c5e908adfa"],
+
+Cell[BoxData[
+ RowBox[{"\[LeftAssociation]", 
+  RowBox[{
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(A\\), \\(\\\\ \\(0\\)\\)]\\)\"\>", "\[Rule]", 
+    FractionBox["3", "4"]}], ",", 
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(A\\), \\(\\\\ \\(n\\)\\)]\\)\"\>", "\[Rule]",
+     "0"}], ",", 
+   RowBox[{"\<\"\\!\\(\\*SubscriptBox[\\(B\\), \\(n\\)]\\)\"\>", "\[Rule]", 
+    "0"}], ",", 
+   RowBox[{"\<\"SeriesInactive\"\>", "\[Rule]", 
+    FractionBox["3", "8"]}]}], "\[RightAssociation]"}]], "Output",
+ CellChangeTimes->{3.9680539366032124`*^9},
+ CellLabel->"Out[6]=",ExpressionUUID->"57342920-b004-9a43-9941-57748cb44079"]
+}, Open  ]]
+},
+WindowSize->{1141.2, 573.6},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"815e0279-c16f-7849-96ab-affe0978fb57"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[554, 20, 6246, 167, 389, "Input",ExpressionUUID->"70a4f575-edca-544d-bc24-e6c8d1db351a"],
+Cell[CellGroupData[{
+Cell[6825, 191, 367, 9, 47, "Input",ExpressionUUID->"a415a148-e4d6-a240-85ef-17b44e72773f"],
+Cell[7195, 202, 1793, 45, 60, "Output",ExpressionUUID->"3e32045e-effc-b649-bd37-c4d224b686eb"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[9025, 252, 321, 7, 28, "Input",ExpressionUUID->"bc853e48-cddd-774d-9bb8-1c137d616bc6"],
+Cell[9349, 261, 1484, 36, 60, "Output",ExpressionUUID->"be9ae25f-bc57-3044-acf4-de148871b76f"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[10870, 302, 382, 9, 30, "Input",ExpressionUUID->"dc9fb525-24fc-a74d-817f-68c5e908adfa"],
+Cell[11255, 313, 616, 12, 46, "Output",ExpressionUUID->"57342920-b004-9a43-9941-57748cb44079"]
+}, Open  ]]
+}
+]
+*)
+
