@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KaTeX Test</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+</head>
+<body>
+    <h1>KaTeX Test</h1>
+    <div id="test1"></div>
+    <div id="test2"></div>
+    
+    <script>
+        console.log('KaTeX available:', typeof katex !== 'undefined');
+        
+        try {
+            katex.render("E = mc^2", document.getElementById("test1"), {
+                displayMode: true,
+                throwOnError: false
+            });
+            console.log('Test 1 rendered');
+        } catch (err) {
+            console.error('Test 1 error:', err);
+        }
+        
+        try {
+            katex.render("\\frac{\\sqrt{\\pi}}{2}", document.getElementById("test2"), {
+                displayMode: true,
+                throwOnError: false
+            });
+            console.log('Test 2 rendered');
+        } catch (err) {
+            console.error('Test 2 error:', err);
+        }
+    </script>
+</body>
+</html>
