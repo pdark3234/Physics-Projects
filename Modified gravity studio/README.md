@@ -8,6 +8,7 @@ The application is designed around a research workflow: choose a gravity theory,
 
 - Registry-driven selection for theories, backgrounds, model forms, matter content, and metric ansatz presets
 - Symbolic field-equation assembly for curvature, torsion, and non-metricity based theories
+- Covariant teleparallel torsion pipeline with inertial spin connections for spherical tetrads
 - Matter solving for perfect fluid, anisotropic fluid, dust, radiation, and vacuum cases where supported
 - Static spherical TOV diagnostics for compact backgrounds
 - Numeric residual solving for nonlinear matter systems
@@ -40,6 +41,31 @@ The application is designed around a research workflow: choose a gravity theory,
 | `SS_blackhole` | Static spherical black hole | `nu_bh(r)`, `lam_bh(r)` |
 
 Cosmological backgrounds use time-domain diagnostics and do not expose TOV controls. Static spherical backgrounds use radial-domain diagnostics and expose compact-object tools where the selected matter model supports them.
+
+## Teleparallel Geometry
+
+The torsion theories use a covariant tetrad formulation. Cartesian tetrads use a zero inertial spin connection. Spherical-coordinate tetrads use the standard inertial spin connection so coordinate artifacts from the angular frame do not enter the physical field equations.
+
+The teleparallel connection is assembled as:
+
+```text
+Gamma^rho_mu_nu = e_a^rho (partial_nu e^a_mu + omega^a_b_nu e^b_mu)
+```
+
+The `f(T)` and `f(T,B)` field equations use the Lorentz-projected superpotential:
+
+```text
+S_a^{mu nu} = e_a^rho S_rho^{mu nu}
+```
+
+and the Lorentz-covariant divergence:
+
+```text
+D_mu(e S_a^{mu nu}) =
+partial_mu(e S_a^{mu nu}) - e omega^b_a_mu S_b^{mu nu}
+```
+
+For flat Cartesian backgrounds this reduces to the ordinary derivative because `omega^a_b_mu = 0`.
 
 ## Architecture
 
@@ -161,6 +187,7 @@ The parameter scan panel samples selected parameter ranges against finite-value 
 The project uses bounded caches with separate responsibilities:
 
 - Geometry cache for background tensors
+- Spin connection and Lorentz-projected superpotential in the teleparallel geometry cache
 - LHS cache for theory tensors
 - Component cache for selected diagonal field-equation components
 - Ansatz cache for metric-function substitutions

@@ -60,6 +60,8 @@ def assemble_field_equations(
     e, det_e = geometry_cache.vierbein
     T_tens   = geometry_cache.torsion_tensor
     S        = geometry_cache.superpotential
+    Slor     = geometry_cache.lorentz_superpotential
+    omega    = geometry_cache.spin_connection
     KD       = pt.kdelta()
 
     # D'Alembertian of fB: □fB = g^ij ∇_i ∇_j fB
@@ -83,6 +85,11 @@ def assemble_field_equations(
         HfB = None
         BOX_fB = sp.Integer(0)
 
+    lorentz_div_S = (
+        pt.D(det_e * Slor('_a,^mu,^lam'), '_mu')
+        - det_e * omega('^b,_a,_mu') * Slor('_b,^mu,^lam')
+    )
+
     # Assemble value using the spec formula directly
     # term5 must follow the same flat-index contraction as f(T):
     #   4 e^{-1} eⁱ_ν ∂_μ(e eᵢ^α S_α^{μλ}) fT
@@ -94,7 +101,7 @@ def assemble_field_equations(
     )
     term3 = det_e * B_actual * fB_actual * KD('^lam,_nu')
     term4 = 4 * det_e * (pt.D(fB_actual, '_mu') + pt.D(fT_actual, '_mu')) * S('_nu,^mu,^lam')
-    term5 = 4 * e('^i,_nu') * pt.D(det_e * e('_i,^alpha') * S('_alpha,^mu,^lam'), '_mu') * fT_actual
+    term5 = 4 * e('_nu,^a') * lorentz_div_S * fT_actual
     term6 = -4 * det_e * fT_actual * T_tens('^sig,_mu,_nu') * S('_sig,^lam,^mu')
     term7 = -det_e * f_actual * KD('^lam,_nu')
 

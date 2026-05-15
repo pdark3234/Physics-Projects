@@ -56,6 +56,32 @@ Provides compact request summaries, route-level error cleanup, and quiet output 
 
 Coordinates the complete symbolic workflow. It validates registry choices, loads geometry, prepares theory derivatives, assembles stress-energy tensors, extracts equations, invokes the solver, applies ansatz substitutions, computes diagnostics, and prepares plot data.
 
+### `core/geometry.py`
+
+Builds and caches background geometry. Curvature backgrounds provide Christoffel symbols, curvature tensors, Ricci scalar, and Einstein tensor. Teleparallel backgrounds provide the tetrad, determinant, inertial spin connection, spacetime teleparallel connection, torsion tensor, contorsion, coordinate-index superpotential, Lorentz-projected superpotential, torsion scalar, and boundary scalar.
+
+For diagonal spherical tetrads, the geometry layer uses the inertial spin connection:
+
+```text
+omega^1_2theta = -1
+omega^1_3phi   = -sin(theta)
+omega^2_3phi   = -cos(theta)
+```
+
+with antisymmetric partners. Cartesian tetrads use zero spin connection. The teleparallel connection is constructed as:
+
+```text
+Gamma^rho_mu_nu = e_a^rho (partial_nu e^a_mu + omega^a_b_nu e^b_mu)
+```
+
+The geometry cache also stores:
+
+```text
+S_a^{mu nu} = e_a^rho S_rho^{mu nu}
+```
+
+for the tetrad-index divergence terms in `f(T)` and `f(T,B)`.
+
 ### `core/pipeline_cache.py`
 
 Contains bounded in-memory caches for LHS tensors, selected components, ansatz substitutions, reduced/raw equations, and scalar payloads. Each cache has a dedicated dictionary and an environment-configurable size limit.
@@ -87,6 +113,15 @@ Compiles solved symbolic expressions for numpy evaluation, returns plot series d
 ### `core/theories/`
 
 Contains theory-specific LHS construction for `fR`, `fRTLm`, `fT`, `fTB`, `fQ`, and `fQC`.
+
+The torsion modules use the Lorentz-covariant divergence of the projected superpotential:
+
+```text
+D_mu(e S_a^{mu nu}) =
+partial_mu(e S_a^{mu nu}) - e omega^b_a_mu S_b^{mu nu}
+```
+
+This keeps the mixed-index `f(T)` and density-form `f(T,B)` equations diagonal for spherical symmetric test cases and reduces to the ordinary divergence when the spin connection is zero.
 
 ### `core/registry/`
 
@@ -161,7 +196,7 @@ The diagnostic labels adapt to matter content. Perfect fluids use isotropic labe
 
 ## Static Spherical Coordinate Handling
 
-Static spherical equations use the independent radial components selected by the registry, typically `(t,t)`, `(r,r)`, and `(theta,theta)`. The normal pipeline does not replace `sin(theta)` with a numeric angular value. Non-metricity and torsion branches use bounded spherical branch cleanup only for sign and absolute-value artifacts that come from positive angular metric factors. This avoids injecting angular infinities while still keeping physical diagonal components readable.
+Static spherical equations use the independent radial components selected by the registry, typically `(t,t)`, `(r,r)`, and `(theta,theta)`. The normal pipeline does not replace `sin(theta)` with a numeric angular value. Torsion branches use the spherical inertial spin connection and Lorentz-covariant tetrad-index divergence. Non-metricity branches use bounded cleanup only for sign and absolute-value artifacts that come from positive angular metric factors. This avoids injecting angular infinities while still keeping physical diagonal components readable.
 
 ## Cache Boundaries
 
@@ -169,7 +204,7 @@ The backend cache layers are intentionally separated:
 
 | Cache | Scope |
 | --- | --- |
-| Geometry cache | background and curvature sign |
+| Geometry cache | background, curvature sign, tetrad objects, spin connection, geometric scalars |
 | LHS cache | theory, background, stress content, model, model parameters, matter Lagrangian |
 | Component cache | pre-ansatz selected diagonal component |
 | Ansatz cache | ansatz choice and ansatz parameter values |

@@ -36,6 +36,26 @@ get_geometry(background_id, curvature_k)
 
 The geometry cache provides the metric, coordinates, curvature tensors, torsion objects, boundary scalars, non-metricity objects, and tracked Pytearcat tensor names. Cosmological backgrounds use a time coordinate. Static spherical backgrounds use a radial coordinate for solved matter profiles and compact-object diagnostics.
 
+Teleparallel geometry is built from tetrads and inertial spin connections. Cartesian tetrads use a zero spin connection. Spherical-coordinate tetrads use:
+
+```text
+omega^1_2theta = -1
+omega^1_3phi   = -sin(theta)
+omega^2_3phi   = -cos(theta)
+```
+
+with antisymmetric partners. The spacetime teleparallel connection is:
+
+```text
+Gamma^rho_mu_nu = e_a^rho (partial_nu e^a_mu + omega^a_b_nu e^b_mu)
+```
+
+Torsion is then formed from the antisymmetric part of this connection. The geometry cache stores both the coordinate-index superpotential `S_rho^{mu nu}` and the Lorentz-projected superpotential:
+
+```text
+S_a^{mu nu} = e_a^rho S_rho^{mu nu}
+```
+
 ## Stage 3: Model Derivatives
 
 The selected model expression is parsed with dummy scalar symbols and differentiated before replacing those symbols with the active geometric scalars.
@@ -52,6 +72,8 @@ f(Q,C):     f, f_Q, f_C, f_QQ, f_CC
 ```
 
 This keeps model differentiation separate from Pytearcat tensor objects and reduces unnecessary symbolic expansion.
+
+For torsion scalars, the geometry layer uses light rational and trigonometric cleanup rather than full global simplification. This keeps spherical wormhole and black-hole runs from expanding large angular and square-root structures before the matter variables are isolated.
 
 ## Stage 4: Stress-Energy Assembly
 
@@ -87,6 +109,24 @@ core/theories/fQC.py
 
 The pipeline extracts only the components required by the selected matter model. A perfect-fluid run usually needs two equations. An anisotropic run usually needs three independent diagonal equations.
 
+For `f(T)`, the mixed-index LHS uses:
+
+```text
+e^{-1} e^a_mu D_rho(e S_a^{rho nu}) f_T
++ S^{nu lambda}_alpha T^alpha_{lambda mu} f_T
+- S^{nu rho}_mu partial_rho(T) f_TT
++ 1/4 delta^nu_mu f
+```
+
+For `f(T,B)`, the tetrad-divergence term uses the same Lorentz-covariant derivative:
+
+```text
+D_mu(e S_a^{mu lambda}) =
+partial_mu(e S_a^{mu lambda}) - e omega^b_a_mu S_b^{mu lambda}
+```
+
+This is the term that removes inertial angular off-diagonal artifacts for diagonal spherical tetrads.
+
 For static spherical anisotropic systems, the canonical component set is:
 
 ```text
@@ -97,7 +137,7 @@ The `(phi,phi)` component is not required for the normal solve path.
 
 ## Static Spherical Angular Handling
 
-The normal static spherical pipeline does not evaluate the angular coordinate. The selected `(theta,theta)` component avoids the physical need for a separate angular specialization. Non-metricity and torsion theory modules may remove sign or absolute-value wrappers that arise from positive spherical metric factors, but they do not inject singular angular values.
+The normal static spherical pipeline does not evaluate the angular coordinate. The selected `(theta,theta)` component avoids the physical need for a separate angular specialization. Torsion theory modules use the inertial spin connection and Lorentz-covariant tetrad-index divergence instead of angular substitutions. Non-metricity modules may remove sign or absolute-value wrappers that arise from positive spherical metric factors, but they do not inject singular angular values.
 
 This keeps diagonal component extraction coordinate-aware without altering the field equations by an artificial angular branch.
 
@@ -264,6 +304,7 @@ Key boundaries:
 - Raw equation keys are pre-ansatz.
 - Raw and reduced equation entries use distinct versioned prefixes.
 - Scalar cache keys include theory/background context and scalar-relevant substitutions.
+- The geometry disk-cache version changes when the tetrad, spin connection, torsion tensors, or scalar cleanup policy changes.
 
 The plotting and numerical routes also maintain compile caches:
 
