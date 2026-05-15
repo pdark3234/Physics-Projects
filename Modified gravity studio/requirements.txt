@@ -1,0 +1,6 @@
+flask>=2.3
+flask-cors>=4.0
+sympy>=1.12
+numpy>=1.24
+scipy>=1.10
+pytearcat==0.0.8
