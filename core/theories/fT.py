@@ -52,12 +52,19 @@ def assemble_field_equations(
     e, det_e = geometry_cache.vierbein
     T_tens   = geometry_cache.torsion_tensor
     S        = geometry_cache.superpotential
+    Slor     = geometry_cache.lorentz_superpotential
+    omega    = geometry_cache.spin_connection
     KD       = pt.kdelta()
+
+    lorentz_div_S = (
+        pt.D(det_e * Slor('_a,^rho,^nu'), '_rho')
+        - det_e * omega('^b,_a,_rho') * Slor('_b,^rho,^nu')
+    )
 
     LHSfT = pt.ten('LHSfT', 2)
     track_tensor_names(geometry_cache, ['LHSfT'])
     LHSfT.assign(
-        det_e**(-1) * e('^i,_mu') * pt.D(det_e * e('_i,^alpha') * S('_alpha,^nu,^rho'), '_rho') * fT_actual
+        det_e**(-1) * e('_mu,^a') * lorentz_div_S * fT_actual
         + S('^nu,^lambda,_alpha') * T_tens('^alpha,_lambda,_mu') * fT_actual
         - S('^nu,^rho,_mu') * pt.D(T_actual, '_rho') * fTT_actual
         + sp.Rational(1, 4) * KD('^nu,_mu') * f_actual,
@@ -88,7 +95,8 @@ def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tup
         if i != j:
             continue
 
-        lhs_comp = simplify_selected_component(LHS.tensor[1][i][j], f"f(T) ({i_str},{j_str})")
+        lhs_comp = sp.trigsimp(sp.cancel(LHS.tensor[1][i][j]))
+        lhs_comp = simplify_selected_component(lhs_comp, f"f(T) ({i_str},{j_str})")
         rhs_comp = kappa * T_SET.tensor[1][i][j]
 
         lhs_comps.append(lhs_comp)

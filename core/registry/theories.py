@@ -29,8 +29,7 @@ class TheorySpec:
 
 
 ALL_BACKGROUNDS = [
-    'FRW_flat',
-    'FRW_curved',
+    'FRW',
     'Bianchi_I',
     'Bianchi_III',
     'Kantowski_Sachs',
@@ -39,8 +38,7 @@ ALL_BACKGROUNDS = [
 ]
 
 NONMETRICITY_BACKGROUNDS = [
-    'FRW_flat',
-    'FRW_curved',
+    'FRW',
     'Bianchi_I',
     'Bianchi_III',
     'Kantowski_Sachs',

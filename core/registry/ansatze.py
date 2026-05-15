@@ -6,13 +6,13 @@ ANSATZ_PRESETS = {
     'cosmological': [
         {'id': 'power_law',       'name': 'Power-law',           'expr': 'a0*t**h',               'params': ['a0', 'h']},
         {'id': 'de_sitter',       'name': 'de Sitter',           'expr': 'a0*exp(H0*t)',         'params': ['a0', 'H0']},
-        {'id': 'sinh',            'name': 'Hyperbolic sine',     'expr': 'a0*sinh(H0*t)**n',     'params': ['a0', 'H0', 'n']},
+        {'id': 'sinh',            'name': 'Hyperbolic sine',     'expr': 'a0*sinh(H0*t)**h',     'params': ['a0', 'H0', 'h']},
         {'id': 'power_exp',       'name': 'Power-exponential',   'expr': 'a0*t**h*exp(beta*t)',  'params': ['a0', 'h', 'beta']},
     ],
     'wormhole_b': [
         {'id': 'exponential',     'name': 'Exponential',         'expr': 'r/exp(r - r0)',        'params': ['r0']},
         {'id': 'inverse_power',   'name': 'Inverse Power',       'expr': 'r0**2/r',              'params': ['r0']},
-        {'id': 'power_law',       'name': 'Power-law',           'expr': 'r0*(r0/r)**(n-1)',     'params': ['r0', 'n']},
+        {'id': 'power_law',       'name': 'Power-law',           'expr': 'r0*(r0/r)**(h-1)',     'params': ['r0', 'h']},
     ],
     'wormhole_Phi': [
         {'id': 'zero_tidal',      'name': 'Zero Tidal Force',    'expr': '0',                    'params': []},
@@ -30,8 +30,7 @@ ANSATZ_PRESETS = {
 }
 
 BACKGROUND_ANSATZ_MAP = {
-    'FRW_flat':         [('a', 'cosmological')],
-    'FRW_curved':       [('a', 'cosmological')],
+    'FRW':              [('a', 'cosmological')],
     'Bianchi_I':        [('A', 'cosmological'), ('B', 'cosmological')],
     'Bianchi_III':      [('A', 'cosmological'), ('B', 'cosmological')],
     'Kantowski_Sachs':  [('A', 'cosmological'), ('B', 'cosmological')],
@@ -41,22 +40,22 @@ BACKGROUND_ANSATZ_MAP = {
 
 ANSATZ_PRESET_GROUPS = {
     'Bianchi_I': [
-        {'id': 'power_law', 'name': 'Power-law', 'functions': {'A': 'a0*t**h', 'B': 'a0*t**h'}, 'params': ['a0', 'h']},
-        {'id': 'de_sitter', 'name': 'de Sitter', 'functions': {'A': 'a0*exp(H0*t)', 'B': 'a0*exp(H0*t)'}, 'params': ['a0', 'H0']},
-        {'id': 'sinh', 'name': 'Hyperbolic sine', 'functions': {'A': 'a0*sinh(H0*t)**n', 'B': 'a0*sinh(H0*t)**n'}, 'params': ['a0', 'H0', 'n']},
-        {'id': 'power_exp', 'name': 'Power-exponential', 'functions': {'A': 'a0*t**h*exp(beta*t)', 'B': 'a0*t**h*exp(beta*t)'}, 'params': ['a0', 'h', 'beta']},
+        {'id': 'power_law', 'name': 'Directional power-law', 'functions': {'A': 'A0*t**pA', 'B': 'B0*t**pB'}, 'params': ['A0', 'B0', 'pA', 'pB']},
+        {'id': 'de_sitter', 'name': 'Directional de Sitter', 'functions': {'A': 'A0*exp(Hx*t)', 'B': 'B0*exp(Hy*t)'}, 'params': ['A0', 'B0', 'Hx', 'Hy']},
+        {'id': 'sinh', 'name': 'Directional hyperbolic sine', 'functions': {'A': 'A0*sinh(H0*t)**pA', 'B': 'B0*sinh(H0*t)**pB'}, 'params': ['A0', 'B0', 'H0', 'pA', 'pB']},
+        {'id': 'power_exp', 'name': 'Directional power-exponential', 'functions': {'A': 'A0*t**pA*exp(Hx*t)', 'B': 'B0*t**pB*exp(Hy*t)'}, 'params': ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy']},
     ],
     'Bianchi_III': [
-        {'id': 'power_law', 'name': 'Power-law', 'functions': {'A': 'a0*t**h', 'B': 'a0*t**h'}, 'params': ['a0', 'h']},
-        {'id': 'de_sitter', 'name': 'de Sitter', 'functions': {'A': 'a0*exp(H0*t)', 'B': 'a0*exp(H0*t)'}, 'params': ['a0', 'H0']},
-        {'id': 'sinh', 'name': 'Hyperbolic sine', 'functions': {'A': 'a0*sinh(H0*t)**n', 'B': 'a0*sinh(H0*t)**n'}, 'params': ['a0', 'H0', 'n']},
-        {'id': 'power_exp', 'name': 'Power-exponential', 'functions': {'A': 'a0*t**h*exp(beta*t)', 'B': 'a0*t**h*exp(beta*t)'}, 'params': ['a0', 'h', 'beta']},
+        {'id': 'power_law', 'name': 'Directional power-law', 'functions': {'A': 'A0*t**pA', 'B': 'B0*t**pB'}, 'params': ['A0', 'B0', 'pA', 'pB']},
+        {'id': 'de_sitter', 'name': 'Directional de Sitter', 'functions': {'A': 'A0*exp(Hx*t)', 'B': 'B0*exp(Hy*t)'}, 'params': ['A0', 'B0', 'Hx', 'Hy']},
+        {'id': 'sinh', 'name': 'Directional hyperbolic sine', 'functions': {'A': 'A0*sinh(H0*t)**pA', 'B': 'B0*sinh(H0*t)**pB'}, 'params': ['A0', 'B0', 'H0', 'pA', 'pB']},
+        {'id': 'power_exp', 'name': 'Directional power-exponential', 'functions': {'A': 'A0*t**pA*exp(Hx*t)', 'B': 'B0*t**pB*exp(Hy*t)'}, 'params': ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy']},
     ],
     'Kantowski_Sachs': [
-        {'id': 'power_law', 'name': 'Power-law', 'functions': {'A': 'a0*t**h', 'B': 'a0*t**h'}, 'params': ['a0', 'h']},
-        {'id': 'de_sitter', 'name': 'de Sitter', 'functions': {'A': 'a0*exp(H0*t)', 'B': 'a0*exp(H0*t)'}, 'params': ['a0', 'H0']},
-        {'id': 'sinh', 'name': 'Hyperbolic sine', 'functions': {'A': 'a0*sinh(H0*t)**n', 'B': 'a0*sinh(H0*t)**n'}, 'params': ['a0', 'H0', 'n']},
-        {'id': 'power_exp', 'name': 'Power-exponential', 'functions': {'A': 'a0*t**h*exp(beta*t)', 'B': 'a0*t**h*exp(beta*t)'}, 'params': ['a0', 'h', 'beta']},
+        {'id': 'power_law', 'name': 'Directional power-law', 'functions': {'A': 'A0*t**pA', 'B': 'B0*t**pB'}, 'params': ['A0', 'B0', 'pA', 'pB']},
+        {'id': 'de_sitter', 'name': 'Directional de Sitter', 'functions': {'A': 'A0*exp(Hx*t)', 'B': 'B0*exp(Hy*t)'}, 'params': ['A0', 'B0', 'Hx', 'Hy']},
+        {'id': 'sinh', 'name': 'Directional hyperbolic sine', 'functions': {'A': 'A0*sinh(H0*t)**pA', 'B': 'B0*sinh(H0*t)**pB'}, 'params': ['A0', 'B0', 'H0', 'pA', 'pB']},
+        {'id': 'power_exp', 'name': 'Directional power-exponential', 'functions': {'A': 'A0*t**pA*exp(Hx*t)', 'B': 'B0*t**pB*exp(Hy*t)'}, 'params': ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy']},
     ],
     'SS_blackhole': [
         {'id': 'schwarzschild', 'name': 'Schwarzschild', 'functions': {'nu_bh': '1 - 2*M/r', 'lam_bh': '1/(1 - 2*M/r)'}, 'params': ['M']},

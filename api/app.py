@@ -25,6 +25,12 @@ from collections import OrderedDict
 app = Flask(__name__, template_folder='../templates', static_folder='../static')
 CORS(app)
 
+from api.routes.numeric import numeric_bp
+from api.routes.plotting import plotting_bp
+
+app.register_blueprint(numeric_bp)
+app.register_blueprint(plotting_bp)
+
 # Task registry
 TASK_REGISTRY: dict = {}
 TASK_QUEUES: dict   = {}
@@ -68,6 +74,22 @@ def _prune_task_state(force: bool = False):
 def log_info(message: str):
     """Print important server events even when noisy symbolic logs are muted."""
     print(message, file=sys.__stdout__, flush=True)
+
+
+def _symbolic_logs_enabled() -> bool:
+    """Return true only when raw symbolic library/debug logs are requested."""
+    return os.environ.get("MGS_SYMBOLIC_LOGS", "false").lower() == "true"
+
+
+@contextlib.contextmanager
+def _quiet_symbolic_output():
+    """Mute solver/library stdout while preserving explicit server progress logs."""
+    if _symbolic_logs_enabled():
+        yield
+        return
+
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        yield
 
 
 def get_task_queue(task_id: str) -> Queue:
@@ -319,10 +341,10 @@ def start_computation():
     get_task_queue(task_id)  # initialise queue before thread starts
 
     log_info(
-        "[MGS] queued "
-        f"{task_id[:8]} | theory={data.get('theory', 'fR')} "
-        f"background={data.get('background_id', 'FRW_flat')} "
-        f"matter={data.get('stress_tensor', 'perfect_fluid')}"
+        f"[MGS] Queued run {task_id[:8]} | "
+        f"{data.get('theory', 'fR')} | "
+        f"{data.get('background_id', 'FRW')} | "
+        f"{data.get('stress_tensor', 'perfect_fluid')}"
     )
 
     thread = threading.Thread(
@@ -342,28 +364,31 @@ def _run_pipeline_task(task_id: str, data: dict):
 
     start_time = time.perf_counter()
 
+    last_progress_key = {"value": None}
+
     def callback(event):
         emit_event(task_id, event)
         event_type = event.get('type')
         if event_type == 'progress':
             _mark_task(task_id, status='running', last_progress_at=time.time())
-            log_info(
-                "[MGS] progress "
-                f"{task_id[:8]} | stage={event.get('stage')} "
-                f"{event.get('pct')}% | {event.get('label')}"
-            )
+            pct = int(event.get('pct') or 0)
+            label = str(event.get('label') or 'Working')
+            progress_key = (pct, label)
+            if progress_key != last_progress_key["value"]:
+                last_progress_key["value"] = progress_key
+                log_info(f"  [{task_id[:8]}] {pct:3d}%  {label}")
         elif event_type == 'complete':
             elapsed = time.perf_counter() - start_time
             _mark_task(task_id, status='complete', completed_at=time.time(), elapsed=elapsed)
-            log_info(f"[MGS] complete {task_id[:8]} | {elapsed:.2f}s")
+            log_info(f"[MGS] Complete run {task_id[:8]} | {elapsed:.2f}s")
         elif event_type == 'error':
             elapsed = time.perf_counter() - start_time
             _mark_task(task_id, status='error', completed_at=time.time(), elapsed=elapsed)
-            log_info(f"[MGS] error {task_id[:8]} | {elapsed:.2f}s | {event.get('message')}")
+            log_info(f"[MGS] Error in run {task_id[:8]} | {elapsed:.2f}s | {event.get('message')}")
         elif event_type == 'cancelled':
             elapsed = time.perf_counter() - start_time
             _mark_task(task_id, status='cancelled', completed_at=time.time(), elapsed=elapsed)
-            log_info(f"[MGS] cancelled {task_id[:8]} | {elapsed:.2f}s")
+            log_info(f"[MGS] Cancelled run {task_id[:8]} | {elapsed:.2f}s")
 
     pipeline = Pipeline(callback)
 
@@ -374,7 +399,7 @@ def _run_pipeline_task(task_id: str, data: dict):
     diagnostics = data.get('diagnostics', {})
 
     inp = PipelineInput(
-        background_id  = data.get('background_id', 'FRW_flat'),
+        background_id  = data.get('background_id', 'FRW'),
         theory         = data.get('theory', 'fR'),
         model_expr     = data.get('model_expr', 'R'),
         model_params   = data.get('model_params', {}),
@@ -390,45 +415,45 @@ def _run_pipeline_task(task_id: str, data: dict):
         compute_stability = bool(diagnostics.get(
             'stability', data.get('compute_stability', True)
         )),
+        compute_tov = bool(diagnostics.get('tov', data.get('compute_tov', True))),
         simplify_mode = data.get('simplify_mode', 'fast'),
     )
 
     log_info(
-        "[MGS] started "
-        f"{task_id[:8]} | {inp.theory} on {inp.background_id} | "
-        f"model={inp.model_expr} | matter={inp.stress_tensor} | "
-        f"diagnostics=EC:{inp.compute_energy_conditions},"
-        f"EoS:{inp.compute_eos},Stab:{inp.compute_stability}"
+        f"[MGS] Started run {task_id[:8]}\n"
+        f"  Theory: {inp.theory}\n"
+        f"  Background: {inp.background_id}\n"
+        f"  Matter: {inp.stress_tensor}\n"
+        f"  Model: {inp.model_expr}\n"
+        f"  Diagnostics: EC={inp.compute_energy_conditions}, "
+        f"EoS={inp.compute_eos}, Stability={inp.compute_stability}, TOV={inp.compute_tov}"
     )
 
     try:
-        from core.config import VERBOSE_LOGS
-        if VERBOSE_LOGS:
+        with _quiet_symbolic_output():
             pipeline.run(inp)
-        else:
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
-                pipeline.run(inp)
     except Exception as e:
         elapsed = time.perf_counter() - start_time
-        log_info(f"[MGS] task exception {task_id[:8]} | {elapsed:.2f}s | {e}")
+        log_info(f"[MGS] Task exception {task_id[:8]} | {elapsed:.2f}s | {e}")
         emit_event(task_id, {'type': 'error', 'message': str(e)})
     finally:
-        try:
-            from core.results import clear_all_render_caches
-            clear_all_render_caches()
-        except Exception:
-            pass
-        try:
-            from core.solver import flush_simplify_cache
-            flush_simplify_cache()
-        except Exception:
-            pass
-        try:
-            from core.pipeline_cache import flush_sympy_caches, prune_all_caches
-            prune_all_caches(lambda _msg: None)
-            flush_sympy_caches(lambda _msg: None)
-        except Exception:
-            pass
+        with _quiet_symbolic_output():
+            try:
+                from core.results import clear_all_render_caches
+                clear_all_render_caches()
+            except Exception:
+                pass
+            try:
+                from core.solver import flush_simplify_cache
+                flush_simplify_cache()
+            except Exception:
+                pass
+            try:
+                from core.pipeline_cache import flush_sympy_caches, prune_all_caches
+                prune_all_caches(lambda _msg: None)
+                flush_sympy_caches(lambda _msg: None)
+            except Exception:
+                pass
 
         pipeline = None
         inp = None

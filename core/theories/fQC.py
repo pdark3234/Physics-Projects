@@ -85,9 +85,11 @@ def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tup
         j = ctx.coord_index[j_str]
         if i != j:
             continue
+        from core.theories.fQ import _bounded_component_trig_cleanup, _positive_spherical_branch
+        lhs_comp = _bounded_component_trig_cleanup(_positive_spherical_branch(LHS.tensor[0][i][j]))
         lhs_comps.append(
             simplify_selected_component_transcendental(
-                LHS.tensor[0][i][j],
+                lhs_comp,
                 f"f(Q,C) ({i_str},{j_str})",
             )
         )

@@ -60,6 +60,8 @@ def assemble_field_equations(
     e, det_e = geometry_cache.vierbein
     T_tens   = geometry_cache.torsion_tensor
     S        = geometry_cache.superpotential
+    Slor     = geometry_cache.lorentz_superpotential
+    omega    = geometry_cache.spin_connection
     KD       = pt.kdelta()
 
     # D'Alembertian of fB: □fB = g^ij ∇_i ∇_j fB
@@ -83,6 +85,11 @@ def assemble_field_equations(
         HfB = None
         BOX_fB = sp.Integer(0)
 
+    lorentz_div_S = (
+        pt.D(det_e * Slor('_a,^mu,^lam'), '_mu')
+        - det_e * omega('^b,_a,_mu') * Slor('_b,^mu,^lam')
+    )
+
     # Assemble value using the spec formula directly
     # term5 must follow the same flat-index contraction as f(T):
     #   4 e^{-1} eⁱ_ν ∂_μ(e eᵢ^α S_α^{μλ}) fT
@@ -94,7 +101,7 @@ def assemble_field_equations(
     )
     term3 = det_e * B_actual * fB_actual * KD('^lam,_nu')
     term4 = 4 * det_e * (pt.D(fB_actual, '_mu') + pt.D(fT_actual, '_mu')) * S('_nu,^mu,^lam')
-    term5 = 4 * det_e**(-1) * e('^i,_nu') * pt.D(det_e * e('_i,^alpha') * S('_alpha,^mu,^lam'), '_mu') * fT_actual
+    term5 = 4 * e('_nu,^a') * lorentz_div_S * fT_actual
     term6 = -4 * det_e * fT_actual * T_tens('^sig,_mu,_nu') * S('_sig,^lam,^mu')
     term7 = -det_e * f_actual * KD('^lam,_nu')
 
@@ -105,6 +112,7 @@ def assemble_field_equations(
     track_tensor_names(geometry_cache, ['gup', 'HfB', 'LHSfTB'])
     LHSfTB.assign(value, '^lam,_nu')
     LHSfTB.complete('^,_')
+    LHSfTB._mgs_det_e = det_e
     print("[fTB] LHS assembly complete")
     return LHSfTB
 
@@ -112,7 +120,7 @@ def assemble_field_equations(
 def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tuple[list, list]:
     """
     Extract mixed-index components for f(T,B) LHS and SET.
-    RHS factor is 16π (f(T,B) includes det_e factor on LHS).
+    RHS factor is 16π after dividing the density-form equation by det(e).
     Components extracted as ^λ_ν mixed.
     """
     from core.theories.utils import simplify_selected_component
@@ -120,7 +128,8 @@ def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tup
     lhs_comps = []
     rhs_comps = []
 
-    kappa = 16 * sp.pi  # f(T,B) convention (LHS already has det_e factor)
+    kappa = 16 * sp.pi
+    det_e = getattr(LHS, "_mgs_det_e", None)
 
     for (i_str, j_str) in index_pairs:
         i = ctx.coord_index[i_str]
@@ -130,7 +139,11 @@ def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tup
         if i != j:
             continue
 
-        lhs_comp = simplify_selected_component(LHS.tensor[1][i][j], f"f(T,B) ({i_str},{j_str})")
+        lhs_raw = LHS.tensor[1][i][j]
+        if det_e is not None:
+            lhs_raw = sp.cancel(lhs_raw / det_e)
+            lhs_raw = sp.trigsimp(lhs_raw)
+        lhs_comp = simplify_selected_component(lhs_raw, f"f(T,B) ({i_str},{j_str})")
         rhs_comp = kappa * T_SET.tensor[1][i][j]
 
         lhs_comps.append(lhs_comp)

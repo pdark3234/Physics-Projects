@@ -29,6 +29,15 @@ DEFAULT_SIMPLIFY_MODE = os.environ.get('MGS_SIMPLIFY_MODE', 'fast').strip().lowe
 _all_render_caches = []
 
 
+def _maintenance_logs_enabled() -> bool:
+    return os.environ.get('MGS_SYMBOLIC_LOGS', 'false').lower() == 'true'
+
+
+def _cache_log(message: str) -> None:
+    if _maintenance_logs_enabled():
+        print(message, flush=True)
+
+
 def clear_all_render_caches():
     """Clear all temporary render caches. Call this at session end."""
     global _all_render_caches
@@ -46,24 +55,24 @@ def clear_all_temporary_caches():
             from core.solver import flush_simplify_cache
             flush_simplify_cache(clear_all=True)
         except Exception as e:
-            print(f"[CACHE] Error clearing solver cache: {e}", flush=True)
+            _cache_log(f"[CACHE] Error clearing solver cache: {e}")
 
         try:
             from core.pipeline_cache import clear_all_pipeline_caches
             clear_all_pipeline_caches(lambda _msg: None)
         except Exception as e:
-            print(f"[CACHE] Error clearing pipeline cache: {e}", flush=True)
+            _cache_log(f"[CACHE] Error clearing pipeline cache: {e}")
 
         try:
             from core.geometry import clear_cache
             clear_cache()
         except Exception as e:
-            print(f"[CACHE] Error clearing geometry cache: {e}", flush=True)
+            _cache_log(f"[CACHE] Error clearing geometry cache: {e}")
 
         _clear_disk_caches()
-        print("[CACHE] All temporary caches cleared", flush=True)
+        _cache_log("[CACHE] All temporary caches cleared")
     except Exception as e:
-        print(f"[CACHE] Error during cache cleanup: {e}", flush=True)
+        _cache_log(f"[CACHE] Error during cache cleanup: {e}")
 
 
 def _clear_disk_caches():
@@ -78,9 +87,9 @@ def _clear_disk_caches():
         if os.path.exists(geometry_cache_dir):
             try:
                 shutil.rmtree(geometry_cache_dir)
-                print(f"[CACHE] Removed geometry cache: {geometry_cache_dir}", flush=True)
+                _cache_log(f"[CACHE] Removed geometry cache: {geometry_cache_dir}")
             except Exception as e:
-                print(f"[CACHE] Error removing geometry cache: {e}", flush=True)
+                _cache_log(f"[CACHE] Error removing geometry cache: {e}")
         
         # Clear Python bytecode caches
         base_dir = os.path.dirname(os.path.dirname(__file__))  # Project root
@@ -95,12 +104,12 @@ def _clear_disk_caches():
                 try:
                     if os.path.isdir(cache_path):
                         shutil.rmtree(cache_path)
-                        print(f"[CACHE] Removed bytecode cache dir: {cache_path}", flush=True)
+                        _cache_log(f"[CACHE] Removed bytecode cache dir: {cache_path}")
                     else:
                         os.remove(cache_path)
-                        print(f"[CACHE] Removed bytecode cache file: {cache_path}", flush=True)
+                        _cache_log(f"[CACHE] Removed bytecode cache file: {cache_path}")
                 except Exception as e:
-                    print(f"[CACHE] Error removing {cache_path}: {e}", flush=True)
+                    _cache_log(f"[CACHE] Error removing {cache_path}: {e}")
         
         # Clear any temporary files in core directory
         temp_patterns = [
@@ -113,15 +122,15 @@ def _clear_disk_caches():
                 try:
                     if os.path.isfile(temp_path):
                         os.remove(temp_path)
-                        print(f"[CACHE] Removed temp file: {temp_path}", flush=True)
+                        _cache_log(f"[CACHE] Removed temp file: {temp_path}")
                     elif os.path.isdir(temp_path):
                         shutil.rmtree(temp_path)
-                        print(f"[CACHE] Removed temp dir: {temp_path}", flush=True)
+                        _cache_log(f"[CACHE] Removed temp dir: {temp_path}")
                 except Exception as e:
-                    print(f"[CACHE] Error removing temp {temp_path}: {e}", flush=True)
+                    _cache_log(f"[CACHE] Error removing temp {temp_path}: {e}")
                     
     except Exception as e:
-        print(f"[CACHE] Error during disk cache cleanup: {e}", flush=True)
+        _cache_log(f"[CACHE] Error during disk cache cleanup: {e}")
 
 
 def _register_cleanup_handler():
@@ -144,18 +153,18 @@ def _register_cleanup_handler():
             
             signal.signal(signal.SIGTERM, cleanup_handler)
             signal.signal(signal.SIGINT, cleanup_handler)
-            print("[CACHE] Signal handlers registered (main thread)", flush=True)
+            _cache_log("[CACHE] Signal handlers registered (main thread)")
         except (ValueError, OSError) as e:
-            print(f"[CACHE] Could not register signal handlers: {e}", flush=True)
+            _cache_log(f"[CACHE] Could not register signal handlers: {e}")
     else:
-        print("[CACHE] Signal handlers skipped (non-main thread)", flush=True)
+        _cache_log("[CACHE] Signal handlers skipped (non-main thread)")
 
 
 # Register cleanup handlers when module is imported
 try:
     _register_cleanup_handler()
 except Exception as e:
-    print(f"[CACHE] Error during cleanup registration: {e}", flush=True)
+    _cache_log(f"[CACHE] Error during cleanup registration: {e}")
 
 
 @dataclass
@@ -173,6 +182,7 @@ class PipelineInput:
     compute_energy_conditions: bool = True
     compute_eos: bool = True
     compute_stability: bool = True
+    compute_tov: bool = True
     simplify_mode: str = 'fast'
 
 
@@ -204,9 +214,21 @@ class PipelineResults:
     cs2_r: Optional[Any] = None
     cs2_t: Optional[Any] = None
 
+    tov_mass: Optional[Any] = None
+    tov_compactness: Optional[Any] = None
+    tov_redshift_gradient: Optional[Any] = None
+    tov_pressure_gradient: Optional[Any] = None
+    tov_hydrostatic_force: Optional[Any] = None
+    tov_gravitational_force: Optional[Any] = None
+    tov_anisotropic_force: Optional[Any] = None
+    tov_residual: Optional[Any] = None
+    tov_mass_continuity_residual: Optional[Any] = None
+
     matter_derivatives: Optional[Dict[sp.Symbol, sp.Expr]] = None
 
     exported_equations: Optional[List[Dict]] = None
+    numeric_solve: Optional[Dict[str, Any]] = None
+    plot_data: Optional[Dict[str, Any]] = None
     early_exit: bool = False
     early_exit_reason: Optional[str] = None
     derived_deferred: bool = False
@@ -651,6 +673,11 @@ def results_to_dict(results: PipelineResults) -> Dict:
             return None
         return expr_str(getattr(results, field, None), label)
 
+    def maybe_tov(field, label):
+        if not dr.get('tov', True):
+            return None
+        return expr_str(getattr(results, field, None), label)
+
     return {
         'scalars': {
             'R':        expr_str(results.R,        'scalar R'),
@@ -682,9 +709,22 @@ def results_to_dict(results: PipelineResults) -> Dict:
             'cs2_r': maybe_stab('cs2_r', 'cs2_r'),
             'cs2_t': maybe_stab('cs2_t', 'cs2_t'),
         },
+        'tov': {
+            'mass': maybe_tov('tov_mass', 'm(r)'),
+            'compactness': maybe_tov('tov_compactness', '2m/r'),
+            'redshift_gradient': maybe_tov('tov_redshift_gradient', 'Phi_prime'),
+            'pressure_gradient': maybe_tov('tov_pressure_gradient', 'dP_r/dr'),
+            'hydrostatic_force': maybe_tov('tov_hydrostatic_force', 'F_h'),
+            'gravitational_force': maybe_tov('tov_gravitational_force', 'F_g'),
+            'anisotropic_force': maybe_tov('tov_anisotropic_force', 'F_a'),
+            'residual': maybe_tov('tov_residual', 'TOV residual'),
+            'mass_continuity_residual': maybe_tov('tov_mass_continuity_residual', 'mass continuity residual'),
+        },
         'early_exit':              results.early_exit,
         'early_exit_reason':       results.early_exit_reason,
         'exported_equations':      results.exported_equations,
+        'numeric_solve':           results.numeric_solve,
+        'plot_data':               results.plot_data,
         'derived_deferred': results.derived_deferred,
         'derived_deferred_reason': results.derived_deferred_reason,
         'diagnostics_requested': results.diagnostics_requested,
@@ -742,9 +782,22 @@ def _minimal_results_dict(results: PipelineResults) -> Dict:
             'cs2_r': simple_repr(results.cs2_r),
             'cs2_t': simple_repr(results.cs2_t),
         },
+        'tov': {
+            'mass': simple_repr(results.tov_mass),
+            'compactness': simple_repr(results.tov_compactness),
+            'redshift_gradient': simple_repr(results.tov_redshift_gradient),
+            'pressure_gradient': simple_repr(results.tov_pressure_gradient),
+            'hydrostatic_force': simple_repr(results.tov_hydrostatic_force),
+            'gravitational_force': simple_repr(results.tov_gravitational_force),
+            'anisotropic_force': simple_repr(results.tov_anisotropic_force),
+            'residual': simple_repr(results.tov_residual),
+            'mass_continuity_residual': simple_repr(results.tov_mass_continuity_residual),
+        },
         'early_exit': results.early_exit,
         'early_exit_reason': results.early_exit_reason,
         'exported_equations': results.exported_equations,
+        'numeric_solve': results.numeric_solve,
+        'plot_data': results.plot_data,
         'derived_deferred': results.derived_deferred,
         'derived_deferred_reason': results.derived_deferred_reason,
         'diagnostics_requested': results.diagnostics_requested,

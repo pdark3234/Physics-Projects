@@ -18,7 +18,7 @@ import pickle
 # Disk cache configuration
 MGS_DISK_CACHE = os.environ.get('MGS_DISK_CACHE', 'false').lower() == 'true'
 GEOMETRY_CACHE_DIR = os.path.join(os.path.dirname(__file__), '.geometry_cache')
-CACHE_VERSION = 4  # Increment whenever geometry structure, vierbein entries, or
+CACHE_VERSION = 5  # Increment whenever geometry structure, vierbein entries, or
                    # LazyResult pickle contract changes.  Stale disk caches are
                    # silently ignored and recomputed — never lower this value.
 
@@ -65,8 +65,10 @@ class GeometryCache:
     # Teleparallel path
     vierbein: Optional[Tuple[Any, sp.Expr]] = None   # (e tensor, det_e)
     torsion_tensor: Any = None
+    spin_connection: Any = None
     contorsion: Any = None
     superpotential: Any = None
+    lorentz_superpotential: Any = None
     T_scalar_expr: Optional[sp.Expr] = None
     B_scalar_expr: Optional[sp.Expr] = None
     lc_from_torsion: Any = None
@@ -143,8 +145,6 @@ def get_geometry(background_id: str, curvature_k: int = 0) -> GeometryCache:
     Return cached geometry for background, computing if necessary.
     Thread-safe. Checks disk cache before computing.
     """
-    if background_id == 'FRW_curved':
-        curvature_k = 0
     key = (background_id, curvature_k)
     
     # Check memory cache first
@@ -195,10 +195,8 @@ def _compute_geometry(background_id: str, curvature_k: int) -> GeometryCache:
 
     cache = GeometryCache()
 
-    if background_id == 'FRW_flat':
-        _compute_FRW_flat(pt, cache)
-    elif background_id == 'FRW_curved':
-        _compute_FRW_curved(pt, cache, curvature_k)
+    if background_id == 'FRW':
+        _compute_FRW(pt, cache, curvature_k)
     elif background_id == 'Bianchi_I':
         _compute_Bianchi_I(pt, cache)
     elif background_id == 'Bianchi_III':
@@ -233,7 +231,27 @@ def _curvature_path(pt: Any, cache: GeometryCache):
     cache.tensor_names.extend(['Christoffel', 'Riemann', 'Ricci', 'Einstein'])
 
 
-def _teleparallel_path(pt: Any, cache: GeometryCache, vierbein_matrix, vierbein_inv):
+def _zero_spin_connection(pt: Any):
+    omega = pt.ten('omega', 3)
+    omega.assign([[[sp.Integer(0) for _ in range(4)] for _ in range(4)] for _ in range(4)], '^,_,_')
+    return omega
+
+
+def _spherical_spin_connection(pt: Any, theta: sp.Symbol):
+    """Inertial spin connection for diagonal tetrads in spherical coordinates."""
+    omega = pt.ten('omega', 3)
+    values = [[[sp.Integer(0) for _ in range(4)] for _ in range(4)] for _ in range(4)]
+    values[1][2][2] = sp.Integer(-1)
+    values[2][1][2] = sp.Integer(1)
+    values[1][3][3] = -sp.sin(theta)
+    values[3][1][3] = sp.sin(theta)
+    values[2][3][3] = -sp.cos(theta)
+    values[3][2][3] = sp.cos(theta)
+    omega.assign(values, '^,_,_')
+    return omega
+
+
+def _teleparallel_path(pt: Any, cache: GeometryCache, vierbein_matrix, vierbein_inv, spin_connection=None):
     """Compute vierbein → torsion → contorsion → superpotential → T, B scalars."""
     e = pt.ten('e', 2)
     e.assign(vierbein_matrix, '_,^')
@@ -245,13 +263,22 @@ def _teleparallel_path(pt: Any, cache: GeometryCache, vierbein_matrix, vierbein_
     cache.vierbein = (e, det_e)
 
     # Weitzenböck connection
+    omega = spin_connection if spin_connection is not None else _zero_spin_connection(pt)
+    cache.spin_connection = omega
+
     GammaW = pt.ten('GammaW', 3)
-    GammaW.assign(e('^d,_i') * pt.D(e('_u,^i'), '_v'), '^d,_u,_v')
+    GammaW.assign(
+        e('^rho,_a') * (
+            pt.D(e('_mu,^a'), '_nu')
+            + omega('^a,_b,_nu') * e('_mu,^b')
+        ),
+        '^rho,_mu,_nu'
+    )
     GammaW.complete('^,_,_')
 
     # Torsion tensor T^λ_μν
     Ttens = pt.ten('Ttens', 3)
-    Ttens.assign(GammaW('^d,_v,_u') - GammaW('^d,_u,_v'), '^d,_u,_v')
+    Ttens.assign(GammaW('^rho,_nu,_mu') - GammaW('^rho,_mu,_nu'), '^rho,_mu,_nu')
     Ttens.complete('^,_,_')
     cache.torsion_tensor = Ttens
 
@@ -280,16 +307,20 @@ def _teleparallel_path(pt: Any, cache: GeometryCache, vierbein_matrix, vierbein_
     S.complete('_,^,^')
     cache.superpotential = S
 
+    Slor = pt.ten('Slor', 3)
+    Slor.assign(e('^rho,_a') * S('_rho,^mu,^nu'), '_a,^mu,^nu')
+    cache.lorentz_superpotential = Slor
+
     # Torsion scalar T = ½ S_ρ^μν T^ρ_μν
     T_scalar = sp.Rational(1, 2) * S('_roh,^mu,^nu') * Ttens('^roh,_mu,_nu')
-    cache.T_scalar_expr = sp.simplify(T_scalar)
+    cache.T_scalar_expr = sp.trigsimp(sp.cancel(T_scalar))
 
     # Boundary term B = 2e⁻¹ ∂_μ(e T^ν_ν^μ)
     B_scalar = 2 * det_e**(-1) * pt.D(det_e * Ttens('^mu,_mu,^nu'), '_nu')
-    cache.B_scalar_expr = sp.simplify(B_scalar)
+    cache.B_scalar_expr = sp.trigsimp(sp.cancel(B_scalar))
 
     # Track tensor names for cleanup
-    cache.tensor_names.extend(['e', 'GammaW', 'Ttens', 'K', 'KD', 'S'])
+    cache.tensor_names.extend(['e', 'omega', 'GammaW', 'Ttens', 'K', 'KD', 'S', 'Slor'])
 
     # Levi-Civita Christoffel from torsion (for f(T,B))
     cache.lc_from_torsion = pt.christoffel(Ttens('^rho,_mu,_nu'))
@@ -297,21 +328,8 @@ def _teleparallel_path(pt: Any, cache: GeometryCache, vierbein_matrix, vierbein_
 
 # ─── Individual background implementations ────────────────────────────────────
 
-def _compute_FRW_flat(pt, cache):
-    t, x, y, z = pt.coords('t,x,y,z')
-    a = pt.fun('a', 't')
-    g = pt.metric('ds2 = -dt**2 + a**2*(dx**2 + dy**2 + dz**2)')
-    g.complete('_,_')
-    cache.metric_tensor_obj = g
-    cache.live_symbols = {'t': t, 'x': x, 'y': y, 'z': z, 'a': a}
-    cache.tensor_names.append('g')  # Track metric tensor
-    _curvature_path(pt, cache)
-    vierbein_m = [[1,0,0,0],[0,a,0,0],[0,0,a,0],[0,0,0,a]]
-    vierbein_i = [[1,0,0,0],[0,1/a,0,0],[0,0,1/a,0],[0,0,0,1/a]]
-    _teleparallel_path(pt, cache, vierbein_m, vierbein_i)
 
-
-def _compute_FRW_curved(pt, cache, k):
+def _compute_FRW(pt, cache, k):
     t, r, theta, phi = pt.coords('t,r,theta,phi')
     a = pt.fun('a', 't')
     k_sym = pt.con('k')
@@ -337,7 +355,7 @@ def _compute_FRW_curved(pt, cache, k):
         [0,                0,      1/(a*r),                       0],
         [0,                0,          0,  1/(a*r*sp.sin(theta))],
     ]
-    _teleparallel_path(pt, cache, vierbein_m, vierbein_i)
+    _teleparallel_path(pt, cache, vierbein_m, vierbein_i, _spherical_spin_connection(pt, theta))
 
 
 def _compute_Bianchi_I(pt, cache):
@@ -385,7 +403,7 @@ def _compute_Kantowski_Sachs(pt, cache):
     _curvature_path(pt, cache)
     vierbein_m = [[1,0,0,0],[0,A,0,0],[0,0,B,0],[0,0,0,B*sp.sin(theta)]]
     vierbein_i = [[1,0,0,0],[0,1/A,0,0],[0,0,1/B,0],[0,0,0,1/(B*sp.sin(theta))]]
-    _teleparallel_path(pt, cache, vierbein_m, vierbein_i)
+    _teleparallel_path(pt, cache, vierbein_m, vierbein_i, _spherical_spin_connection(pt, theta))
     cache.live_symbols['spatial_vector'] = [0, 1/A, 0, 0]
 
 
@@ -414,7 +432,7 @@ def _compute_SS_wormhole(pt, cache):
         [0,           0,   1/r,                      0],
         [0,           0,     0, 1/(r*sp.sin(theta))],
     ]
-    _teleparallel_path(pt, cache, vierbein_m, vierbein_i)
+    _teleparallel_path(pt, cache, vierbein_m, vierbein_i, _spherical_spin_connection(pt, theta))
     # Spatial vector x^μ = (0, √(1-b/r), 0, 0)
     cache.live_symbols['spatial_vector'] = [0, sqrt_term, 0, 0]
 
@@ -444,7 +462,7 @@ def _compute_SS_blackhole(pt, cache):
         [0,     0,      1/r,                    0],
         [0,     0,      0,  1/(r*sp.sin(theta))],
     ]
-    _teleparallel_path(pt, cache, vierbein_m, vierbein_i)
+    _teleparallel_path(pt, cache, vierbein_m, vierbein_i, _spherical_spin_connection(pt, theta))
     cache.live_symbols['spatial_vector'] = [0, 1 / sp.sqrt(lam_bh), 0, 0]
 
 

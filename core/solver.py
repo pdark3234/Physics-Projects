@@ -1555,7 +1555,14 @@ class FieldEquationSolver:
                     _solver_log(f"[SOLVE_COMPONENT] coupled solution for {sym}")
                     return None
 
-                solutions[sym] = solve_final_cleanup(sol)
+                if _is_heavy_transcendental_expr(sol, ops_limit=900):
+                    # For hard f(Q)/f(Q,C) static backgrounds the raw isolated
+                    # component can still contain unevaluated metric functions.
+                    # Cleaning that form before ansatz substitution is far more
+                    # expensive than cleaning the radial expression afterward.
+                    solutions[sym] = sol
+                else:
+                    solutions[sym] = solve_final_cleanup(sol)
 
             print("[SOLVE_COMPONENT] Component isolation succeeded", flush=True)
             return solutions
@@ -2689,7 +2696,7 @@ def _build_repeated_denominator_subs(expr: sp.Expr, min_count: int = 2, min_ops:
 def geometric_kernel_cleanup(expr: sp.Expr) -> sp.Expr:
     """
     Compress common geometric factors such as k*r**2 - 1.
-    Useful for FRW_curved and spherical expressions.
+    Useful for FRW and spherical expressions.
     """
     if expr is None:
         return None

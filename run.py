@@ -8,6 +8,9 @@ import sys
 import os
 import builtins
 
+os.environ.setdefault('MGS_VERBOSE', 'false')
+os.environ.setdefault('MGS_SYMBOLIC_LOGS', 'false')
+
 # Mock IPython display before any pytearcat imports
 if not hasattr(builtins, 'display'):
     builtins.display = lambda *args, **kwargs: None

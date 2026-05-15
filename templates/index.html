@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modified Gravity Studio</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=note-size-20260515">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -64,14 +64,27 @@
             <div class="panel-section">
                 <label class="section-label" for="background">Background Spacetime</label>
                 <select id="background" class="select-full">
-                    <option value="FRW_flat">Flat FRW (isotropic)</option>
-                    <option value="FRW_curved">Curved FRW (symbolic k)</option>
-                    <option value="Bianchi_I">LRS Bianchi Type-I</option>
-                    <option value="Bianchi_III">LRS Bianchi Type-III</option>
-                    <option value="Kantowski_Sachs">Kantowski-Sachs</option>
-                    <option value="SS_wormhole">SS Wormhole (Morris-Thorne)</option>
-                    <option value="SS_blackhole">SS Black Hole (Schwarzschild/RN)</option>
+                    <optgroup label="Isotropic Cosmology">
+                        <option value="FRW">FRW</option>
+                    </optgroup>
+                    <optgroup label="Anisotropic Cosmology">
+                        <option value="Bianchi_I">LRS Bianchi Type-I</option>
+                        <option value="Bianchi_III">LRS Bianchi Type-III</option>
+                        <option value="Kantowski_Sachs">Kantowski-Sachs</option>
+                    </optgroup>
+                    <optgroup label="Static Spherical / Compact Objects">
+                        <option value="SS_wormhole">SS Wormhole (Morris-Thorne)</option>
+                        <option value="SS_blackhole">SS Black Hole (Schwarzschild/RN)</option>
+                    </optgroup>
                 </select>
+                <div id="curvature-k-row" class="hidden" style="margin-top:8px;">
+                    <label class="section-label" for="curvature-k">Spatial Curvature k</label>
+                    <select id="curvature-k" class="select-full">
+                        <option value="1">k = 1 (closed)</option>
+                        <option value="0" selected>k = 0 (flat)</option>
+                        <option value="-1">k = -1 (open)</option>
+                    </select>
+                </div>
                 <!-- Metric display -->
                 <div class="latex-display metric-display" id="metric-display"></div>
                 <!-- Symmetry / isometry group panel -->
@@ -141,6 +154,10 @@
                         <input type="checkbox" id="compute-stability" checked>
                         <span>Stability / sound speed</span>
                     </label>
+                    <label class="check-row hidden" id="compute-tov-row" for="compute-tov">
+                        <input type="checkbox" id="compute-tov" checked>
+                        <span>TOV equilibrium</span>
+                    </label>
                 </div>
             </div>
 
@@ -186,6 +203,7 @@
                     <button class="tab-btn" data-tab="tab-energy">Energy Conditions</button>
                     <button class="tab-btn" data-tab="tab-eos">Equation of State</button>
                     <button class="tab-btn" data-tab="tab-stability">Stability</button>
+                    <button class="tab-btn" data-tab="tab-tov">TOV</button>
                 </div>
 
                 <!-- Tab 1: Matter -->
@@ -206,6 +224,43 @@
                     <div class="result-section" id="solutions-section">
                         <h3 class="section-hdr">Matter Solutions</h3>
                         <div id="solutions-container"></div>
+                        <div id="symbolic-plot-panel" class="numeric-solve-panel hidden">
+                            <div class="numeric-solve-head">
+                                <div>
+                                    <h3 class="section-hdr">Build Plots</h3>
+                                    <p class="note">Sample solved expressions numerically using the existing model and ansatz parameters.</p>
+                                </div>
+                                <button id="build-symbolic-plot-btn" class="btn-secondary">Build Plot Controls</button>
+                            </div>
+                            <div id="symbolic-plot-controls" class="hidden">
+                                <div class="param-grid" id="symbolic-plot-domain-controls"></div>
+                                <h4 class="mini-hdr">Parameters</h4>
+                                <div class="param-grid" id="symbolic-plot-param-controls"></div>
+                                <button id="run-symbolic-plot-btn" class="btn-primary" style="margin-top:12px;">Plot Solved Results</button>
+                                <button id="export-symbolic-plot-btn" class="btn-secondary" data-export-plot style="margin-top:12px;" disabled>Export PNG</button>
+                                <div id="symbolic-plot-status" class="note" style="margin-top:10px;"></div>
+                                <div id="symbolic-matter-plot-container" class="numeric-plot-container hidden"></div>
+                                <div id="symbolic-plot-anchor"></div>
+                                <div id="parameter-scan-panel" class="parameter-scan-panel hidden">
+                                    <div class="numeric-solve-head">
+                                        <div>
+                                            <h3 class="section-hdr">Parameter Scan</h3>
+                                            <p class="note">Find admissible parameter windows by sampling solved expressions over selected ranges.</p>
+                                        </div>
+                                        <button id="build-parameter-scan-btn" class="btn-secondary">Build Scan</button>
+                                    </div>
+                                    <div id="parameter-scan-controls" class="hidden">
+                                        <h4 class="mini-hdr">Scan Ranges</h4>
+                                        <div class="scan-range-grid" id="parameter-scan-range-controls"></div>
+                                        <h4 class="mini-hdr">Constraints</h4>
+                                        <div class="scan-constraint-list" id="parameter-scan-constraints"></div>
+                                        <button id="run-parameter-scan-btn" class="btn-primary" style="margin-top:12px;">Scan Parameter Ranges</button>
+                                        <div id="parameter-scan-status" class="note" style="margin-top:10px;"></div>
+                                        <div id="parameter-scan-results" class="scan-results hidden"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Exported Equations (for early-exit non-linear models) -->
@@ -214,6 +269,26 @@
                         <p class="note">Field equations with ansatz substituted, expressed as LHS = 8π T<sub>μν</sub>. Matter variables remain symbolic.</p>
                         <div id="exported-eq-container"></div>
                         <button id="copy-all-equations-btn" class="btn-secondary" style="margin-top:12px;">Copy All Equations</button>
+                        <div id="numeric-solve-panel" class="numeric-solve-panel hidden">
+                            <div class="numeric-solve-head">
+                                <div>
+                                    <h3 class="section-hdr">Numerical Matter Solve</h3>
+                                    <p class="note">Solve the reduced non-linear residuals pointwise after all model and ansatz parameters are numeric.</p>
+                                </div>
+                                <button id="build-numeric-solve-btn" class="btn-secondary">Build Numerical Solve</button>
+                            </div>
+                            <div id="numeric-solve-controls" class="hidden">
+                                <div class="param-grid" id="numeric-domain-controls"></div>
+                                <h4 class="mini-hdr">Parameters</h4>
+                                <div class="param-grid" id="numeric-param-controls"></div>
+                                <h4 class="mini-hdr">Initial Guesses</h4>
+                                <div class="param-grid" id="numeric-guess-controls"></div>
+                                <button id="run-numeric-solve-btn" class="btn-primary" style="margin-top:12px;">Solve and Plot</button>
+                                <button id="export-numeric-plot-btn" class="btn-secondary" data-export-plot style="margin-top:12px;" disabled>Export PNG</button>
+                                <div id="numeric-solve-status" class="note" style="margin-top:10px;"></div>
+                                <div id="numeric-plot-container" class="numeric-plot-container hidden"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -223,6 +298,9 @@
                         <h3 class="section-hdr">Energy Conditions</h3>
                         <p class="note">Computed from the fully solved, ansatz-substituted expressions.</p>
                         <div id="ec-container"></div>
+                        <div id="ec-plot-options" class="plot-component-options hidden"></div>
+                        <button id="export-energy-plot-btn" class="btn-secondary" data-export-plot style="margin-top:12px;" disabled>Export PNG</button>
+                        <div id="numeric-ec-plot-container" class="numeric-plot-container hidden"></div>
                     </div>
                 </div>
 
@@ -232,6 +310,8 @@
                         <h3 class="section-hdr">Equation of State</h3>
                         <p class="note">Reference: ω = 0 (dust) · 1/3 (radiation) · −1/3 (deceleration boundary) · −1 (Λ) · &lt;−1 (phantom)</p>
                         <div id="eos-container"></div>
+                        <button id="export-eos-plot-btn" class="btn-secondary" data-export-plot style="margin-top:12px;" disabled>Export PNG</button>
+                        <div id="numeric-eos-plot-container" class="numeric-plot-container hidden"></div>
                     </div>
                 </div>
 
@@ -241,6 +321,18 @@
                         <h3 class="section-hdr">Speed of Sound &amp; Stability</h3>
                         <p class="note">Physical stability: 0 ≤ c² ≤ 1 · Herrera cracking: −1 ≤ c²<sub>t</sub> − c²<sub>r</sub> ≤ 0</p>
                         <div id="stability-container"></div>
+                        <button id="export-stability-plot-btn" class="btn-secondary" data-export-plot style="margin-top:12px;" disabled>Export PNG</button>
+                        <div id="numeric-stability-plot-container" class="numeric-plot-container hidden"></div>
+                    </div>
+                </div>
+                <!-- Tab 5: TOV -->
+                <div id="tab-tov" class="tab-content">
+                    <div class="result-section">
+                        <h3 class="section-hdr">TOV Equilibrium</h3>
+                        <p class="note">Static spherical balance: F<sub>h</sub> + F<sub>g</sub> + F<sub>a</sub> = 0.</p>
+                        <div id="tov-container"></div>
+                        <button id="export-tov-plot-btn" class="btn-secondary" data-export-plot style="margin-top:12px;" disabled>Export PNG</button>
+                        <div id="numeric-tov-plot-container" class="numeric-plot-container hidden"></div>
                     </div>
                 </div>
             </div><!-- #results-panel -->
@@ -261,6 +353,7 @@
     </footer>
 </div>
 
-<script src="{{ url_for('static', filename='app.js') }}?v=remove-r-power-20260510"></script>
+<script src="{{ url_for('static', filename='app.js') }}?v=numeric-solve-20260515"></script>
+<script src="{{ url_for('static', filename='js/numericSolve.js') }}?v=scan-plot-best-20260515"></script>
 </body>
 </html>

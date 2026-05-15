@@ -9,6 +9,9 @@
 // ── State ─────────────────────────────────────────────────────────────────────
 let currentTaskId = null;
 let eventSource   = null;
+let currentResults = null;
+let numericSolveCache = new Map();
+let lastNumericPlot = null;
 
 // Registry data loaded at boot
 let backgroundRegistry = [];
@@ -62,8 +65,7 @@ const SET_LATEX = {
 };
 
 const BACKGROUND_ANSATZ = {
-    FRW_flat:        [{ fn: 'a',   category: 'cosmological' }],
-    FRW_curved:      [{ fn: 'a',   category: 'cosmological' }],
+    FRW:             [{ fn: 'a',   category: 'cosmological' }],
     Bianchi_I:       [{ fn: 'A',   category: 'cosmological' }, { fn: 'B', category: 'cosmological' }],
     Bianchi_III:     [{ fn: 'A',   category: 'cosmological' }, { fn: 'B', category: 'cosmological' }],
     Kantowski_Sachs: [{ fn: 'A',   category: 'cosmological' }, { fn: 'B', category: 'cosmological' }],
@@ -75,13 +77,13 @@ const ANSATZ_PRESETS = {
     cosmological: [
         { id: 'power_law', name: 'Power-law',         expr: 'a0*t**h'              },
         { id: 'de_sitter', name: 'de Sitter',         expr: 'a0*exp(H0*t)'         },
-        { id: 'sinh',      name: 'Hyperbolic sine',   expr: 'a0*sinh(H0*t)**n'     },
+        { id: 'sinh',      name: 'Hyperbolic sine',   expr: 'a0*sinh(H0*t)**h'     },
         { id: 'pow_exp',   name: 'Power-exponential', expr: 'a0*t**h*exp(beta*t)'  },
     ],
     wormhole_b: [
         { id: 'exp',   name: 'Exponential',   expr: 'r/exp(r - r0)'     },
         { id: 'inv',   name: 'Inverse Power', expr: 'r0**2/r'           },
-        { id: 'pow',   name: 'Power-law',     expr: 'r0*(r0/r)**(n-1)'  },
+        { id: 'pow',   name: 'Power-law',     expr: 'r0*(r0/r)**(h-1)'  },
     ],
     wormhole_Phi: [
         { id: 'zero',  name: 'Zero Tidal Force', expr: '0'     },
@@ -99,22 +101,22 @@ const ANSATZ_PRESETS = {
 
 const BACKGROUND_ANSATZ_GROUPS = {
     Bianchi_I: [
-        { id: 'power_law', name: 'Power-law', functions: { A: 'a0*t**h', B: 'a0*t**h' } },
-        { id: 'de_sitter', name: 'de Sitter', functions: { A: 'a0*exp(H0*t)', B: 'a0*exp(H0*t)' } },
-        { id: 'sinh', name: 'Hyperbolic sine', functions: { A: 'a0*sinh(H0*t)**n', B: 'a0*sinh(H0*t)**n' } },
-        { id: 'power_exp', name: 'Power-exponential', functions: { A: 'a0*t**h*exp(beta*t)', B: 'a0*t**h*exp(beta*t)' } },
+        { id: 'power_law', name: 'Directional power-law', functions: { A: 'A0*t**pA', B: 'B0*t**pB' }, params: ['A0', 'B0', 'pA', 'pB'] },
+        { id: 'de_sitter', name: 'Directional de Sitter', functions: { A: 'A0*exp(Hx*t)', B: 'B0*exp(Hy*t)' }, params: ['A0', 'B0', 'Hx', 'Hy'] },
+        { id: 'sinh', name: 'Directional hyperbolic sine', functions: { A: 'A0*sinh(H0*t)**pA', B: 'B0*sinh(H0*t)**pB' }, params: ['A0', 'B0', 'H0', 'pA', 'pB'] },
+        { id: 'power_exp', name: 'Directional power-exponential', functions: { A: 'A0*t**pA*exp(Hx*t)', B: 'B0*t**pB*exp(Hy*t)' }, params: ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy'] },
     ],
     Bianchi_III: [
-        { id: 'power_law', name: 'Power-law', functions: { A: 'a0*t**h', B: 'a0*t**h' } },
-        { id: 'de_sitter', name: 'de Sitter', functions: { A: 'a0*exp(H0*t)', B: 'a0*exp(H0*t)' } },
-        { id: 'sinh', name: 'Hyperbolic sine', functions: { A: 'a0*sinh(H0*t)**n', B: 'a0*sinh(H0*t)**n' } },
-        { id: 'power_exp', name: 'Power-exponential', functions: { A: 'a0*t**h*exp(beta*t)', B: 'a0*t**h*exp(beta*t)' } },
+        { id: 'power_law', name: 'Directional power-law', functions: { A: 'A0*t**pA', B: 'B0*t**pB' }, params: ['A0', 'B0', 'pA', 'pB'] },
+        { id: 'de_sitter', name: 'Directional de Sitter', functions: { A: 'A0*exp(Hx*t)', B: 'B0*exp(Hy*t)' }, params: ['A0', 'B0', 'Hx', 'Hy'] },
+        { id: 'sinh', name: 'Directional hyperbolic sine', functions: { A: 'A0*sinh(H0*t)**pA', B: 'B0*sinh(H0*t)**pB' }, params: ['A0', 'B0', 'H0', 'pA', 'pB'] },
+        { id: 'power_exp', name: 'Directional power-exponential', functions: { A: 'A0*t**pA*exp(Hx*t)', B: 'B0*t**pB*exp(Hy*t)' }, params: ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy'] },
     ],
     Kantowski_Sachs: [
-        { id: 'power_law', name: 'Power-law', functions: { A: 'a0*t**h', B: 'a0*t**h' } },
-        { id: 'de_sitter', name: 'de Sitter', functions: { A: 'a0*exp(H0*t)', B: 'a0*exp(H0*t)' } },
-        { id: 'sinh', name: 'Hyperbolic sine', functions: { A: 'a0*sinh(H0*t)**n', B: 'a0*sinh(H0*t)**n' } },
-        { id: 'power_exp', name: 'Power-exponential', functions: { A: 'a0*t**h*exp(beta*t)', B: 'a0*t**h*exp(beta*t)' } },
+        { id: 'power_law', name: 'Directional power-law', functions: { A: 'A0*t**pA', B: 'B0*t**pB' }, params: ['A0', 'B0', 'pA', 'pB'] },
+        { id: 'de_sitter', name: 'Directional de Sitter', functions: { A: 'A0*exp(Hx*t)', B: 'B0*exp(Hy*t)' }, params: ['A0', 'B0', 'Hx', 'Hy'] },
+        { id: 'sinh', name: 'Directional hyperbolic sine', functions: { A: 'A0*sinh(H0*t)**pA', B: 'B0*sinh(H0*t)**pB' }, params: ['A0', 'B0', 'H0', 'pA', 'pB'] },
+        { id: 'power_exp', name: 'Directional power-exponential', functions: { A: 'A0*t**pA*exp(Hx*t)', B: 'B0*t**pB*exp(Hy*t)' }, params: ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy'] },
     ],
     SS_blackhole: [
         { id: 'schwarzschild', name: 'Schwarzschild', functions: { nu_bh: '1 - 2*M/r', lam_bh: '1/(1 - 2*M/r)' } },
@@ -175,7 +177,14 @@ const MODEL_PRESETS = {
     ],
 };
 
-const FRW_BACKGROUNDS = new Set(['FRW_flat', 'FRW_curved']);
+const FRW_BACKGROUNDS = new Set(['FRW']);
+const COSMOLOGY_BACKGROUNDS = new Set([
+    'FRW',
+    'Bianchi_I',
+    'Bianchi_III',
+    'Kantowski_Sachs',
+]);
+const TOV_BACKGROUNDS = new Set(['SS_wormhole', 'SS_blackhole']);
 
 const MATH_FUNCTION_TOKENS = new Set([
     'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
@@ -196,7 +205,7 @@ function collectExprParameters(expr, reserved = new Set()) {
     const names = [];
     tokens.forEach((tok) => {
         if (reserved.has(tok) || MATH_FUNCTION_TOKENS.has(tok)) return;
-        if (/^[A-Z][A-Za-z0-9_]*$/.test(tok) && tok.length <= 2) return;
+        if (/^[A-Z]$/.test(tok)) return;
         names.push(tok);
     });
     return names.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
@@ -294,9 +303,13 @@ function updateAnsatzParamInputs() {
             });
         } else {
             const preset = grouped.find((p) => p.id === (groupSel ? groupSel.value : grouped[0].id)) || grouped[0];
-            Object.values(preset.functions || {}).forEach((expr) => {
-                collectExprParameters(expr, reserved).forEach((name) => params.add(name));
-            });
+            if (Array.isArray(preset.params)) {
+                preset.params.forEach((name) => params.add(name));
+            } else {
+                Object.values(preset.functions || {}).forEach((expr) => {
+                    collectExprParameters(expr, reserved).forEach((name) => params.add(name));
+                });
+            }
         }
     } else {
         fields.forEach(({ fn }) => {
@@ -332,6 +345,15 @@ function collectParamValues(containerId) {
 const $ = id => document.getElementById(id);
 const show  = el => el && el.classList.remove('hidden');
 const hide  = el => el && el.classList.add('hidden');
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 function renderKaTeX(el, latex, displayMode = true) {
     if (!el || !latex) return;
@@ -717,6 +739,7 @@ function renderScalarHintPanel(scalarMap) {
 // ── Background selection ──────────────────────────────────────────────────────
 function onBackgroundChange() {
     const bgId = $('background').value;
+    updateCurvatureKVisibility(bgId);
 
     // Update metric display
     updateMetricDisplay(bgId);
@@ -727,9 +750,46 @@ function onBackgroundChange() {
 
     // Update SET restrictions (anisotropic gating)
     updateSetOptions();
+    updateTovOptionVisibility();
 
     // Fetch and display symmetry group / geometry info
     updateSymmetryPanel(bgId);
+}
+
+function updateCurvatureKVisibility(bgId) {
+    const row = $('curvature-k-row');
+    const select = $('curvature-k');
+    if (!row || !select) return;
+    if (bgId === 'FRW') {
+        show(row);
+        select.disabled = false;
+    } else {
+        hide(row);
+        select.disabled = true;
+        select.value = '0';
+    }
+}
+
+function updateTovOptionVisibility() {
+    const bgId = $('background')?.value || '';
+    const setType = $('stress-energy')?.value || 'perfect_fluid';
+    const row = $('compute-tov-row');
+    const input = $('compute-tov');
+    if (!row || !input) return;
+
+    const supportsTov = TOV_BACKGROUNDS.has(bgId) &&
+        (setType === 'perfect_fluid' || setType === 'anisotropic');
+    const isCosmologyBackground = COSMOLOGY_BACKGROUNDS.has(bgId);
+
+    if (supportsTov && !isCosmologyBackground) {
+        show(row);
+        input.disabled = false;
+        input.checked = true;
+    } else {
+        hide(row);
+        input.checked = false;
+        input.disabled = true;
+    }
 }
 
 function updateSymmetryPanel(bgId) {
@@ -941,6 +1001,7 @@ function onSetChange() {
     
     // Update Lm options based on compatibility
     updateLmOptions(setType);
+    updateTovOptionVisibility();
 }
 
 // ── Ansatz fields ─────────────────────────────────────────────────────────────
@@ -1119,12 +1180,13 @@ function gatherInput() {
         stress_tensor: $('stress-energy').value,
         ansatz:        gatherAnsatz(),
         ansatz_params: collectParamValues('ansatz-params-container'),
-        curvature_k:   0,
+        curvature_k:   parseInt($('curvature-k')?.value || '0', 10),
         matter_lag:    $('lm-choice')?.value || 'rho',
         diagnostics: {
             energy_conditions: $('compute-energy')?.checked ?? true,
             eos: $('compute-eos')?.checked ?? true,
             stability: $('compute-stability')?.checked ?? true,
+            tov: (!$('compute-tov')?.disabled && $('compute-tov')?.checked) || false,
         },
         simplify_mode: $('simplify-mode')?.value || 'fast',
     };
@@ -1219,14 +1281,18 @@ function resetButtons() {
     $('cancel-btn').disabled  = true;
 }
 
+
+// Numeric solve and plotting helpers live in static/js/numericSolve.js
 // ── Display results ───────────────────────────────────────────────────────────
 function displayResults(results) {
+    currentResults = results;
     const theory = getTheory();
     const currentStressTensor = $('stress-energy')?.value || 'perfect_fluid';
     const isSelectedAnisotropic = currentStressTensor === 'anisotropic';
 
     // Handle early-exit (non-linear fRTLm models)
     const isEarlyExit = results.early_exit === true;
+    const hasNumericSolve = !!results.numeric_solve?.available;
     const requestedDiagnostics = results.diagnostics_requested || {};
     
     // Show/hide early-exit warning banner
@@ -1266,7 +1332,7 @@ function displayResults(results) {
     const tabBtns = document.querySelectorAll('.tab-btn');
     tabBtns.forEach(btn => {
         const tabId = btn.getAttribute('data-tab');
-        if (isEarlyExit && (tabId === 'tab-energy' || tabId === 'tab-eos' || tabId === 'tab-stability')) {
+        if (isEarlyExit && !hasNumericSolve && (tabId === 'tab-energy' || tabId === 'tab-eos' || tabId === 'tab-stability' || tabId === 'tab-tov')) {
             btn.style.display = 'none';
         } else {
             btn.style.display = '';
@@ -1362,6 +1428,8 @@ function displayResults(results) {
             hide(exportedEqSection);
         }
     }
+    setupNumericSolvePanel(results);
+    setupSymbolicPlotPanel(results);
 
     // ── Energy conditions (hidden or note in early-exit) ──
     const ecEl = $('ec-container');
@@ -1459,6 +1527,39 @@ function displayResults(results) {
                 note.style.marginTop = '12px';
                 note.textContent = 'Herrera cracking condition: −1 ≤ c²ₜ − c²ᵣ ≤ 0 for stability against cracking.';
                 stabEl.appendChild(note);
+            }
+        }
+    }
+
+    const tovEl = $('tov-container');
+    if (tovEl) {
+        const bgId = $('background')?.value || '';
+        const canShowTov = TOV_BACKGROUNDS.has(bgId) &&
+            (currentStressTensor === 'perfect_fluid' || currentStressTensor === 'anisotropic');
+        if (isEarlyExit) {
+            tovEl.innerHTML = '<p class="note">Not available â€” model requires numerical or perturbative methods</p>';
+        } else if (requestedDiagnostics.tov === false) {
+            tovEl.innerHTML = '<p class="note">TOV analysis was not selected for this run.</p>';
+        } else if (!canShowTov) {
+            tovEl.innerHTML = '<p class="note">TOV analysis is available for static spherical perfect-fluid and anisotropic runs.</p>';
+        } else {
+            tovEl.innerHTML = '';
+            const tov = results.tov || {};
+            tovEl.appendChild(makeCard(
+                '\\(\\mathrm{General\\ TOV\\ balance}\\)',
+                '-\\frac{dP_r}{dr}-(\\rho+P_r)\\Phi^{\\prime}(r)+\\frac{2(P_t-P_r)}{r}=0'
+            ));
+            const tovDefs = [
+                ['hydrostatic_force', 'F_h = -dP_r/dr'],
+                ['gravitational_force', "F_g = -(\\rho + P_r)\\Phi'"],
+                ['anisotropic_force', 'F_a = 2(P_t - P_r)/r'],
+                ['residual', 'F_h + F_g + F_a'],
+            ];
+            tovDefs.forEach(([key, label]) => {
+                if (tov[key]) tovEl.appendChild(makeCard(`\\(${label}\\)`, tov[key]));
+            });
+            if (tovEl.children.length <= 1) {
+                tovEl.innerHTML = '<p class="note">No TOV terms were returned for this run.</p>';
             }
         }
     }

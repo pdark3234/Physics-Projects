@@ -44,11 +44,7 @@ def _Q_expr_for_background(background_id: str, live_symbols: Dict) -> sp.Expr:
     B = live_symbols.get('B')
     k = live_symbols.get('curvature_k', 0)
 
-    if background_id == 'FRW_flat':
-        H = sp.diff(a, t) / a
-        return 6 * H**2
-
-    if background_id == 'FRW_curved':
+    if background_id == 'FRW':
         H = sp.diff(a, t) / a
         return 6 * (H**2 + k / a**2)
 
@@ -329,10 +325,66 @@ def _positive_sqrt(expr: sp.Expr, live_symbols: Dict) -> sp.Expr:
                 lambda node: node == sp.sign(fn),
                 lambda node: sp.Integer(1)
             )
+    rooted = _positive_spherical_branch(rooted, live_symbols.get('theta'))
     try:
         return physical_domain_simplify(rooted)
     except Exception:
         return sp.powsimp(rooted, force=True)
+
+
+def _positive_spherical_branch(expr: sp.Expr, theta=None) -> sp.Expr:
+    """Apply the standard spherical chart branch without evaluating theta.
+
+    We do not set sin(theta)=1.  We only state the coordinate-domain fact
+    0 < theta < pi, so sin(theta) is positive.  This removes Abs/sign
+    artifacts introduced by sqrt(-g) while preserving real angular dependence
+    if a component genuinely has it.
+    """
+    if expr is None:
+        return expr
+    if theta is None:
+        theta = next((sym for sym in getattr(expr, 'free_symbols', set()) if str(sym) == 'theta'), None)
+    if theta is None:
+        return expr
+    sin_t = sp.sin(theta)
+    try:
+        cleaned = expr.replace(
+            lambda node: node == sp.Abs(sin_t),
+            lambda node: sin_t,
+        )
+        cleaned = cleaned.replace(
+            lambda node: node == sp.sign(sin_t),
+            lambda node: sp.Integer(1),
+        )
+        cleaned = cleaned.replace(
+            lambda node: node == sp.sqrt(sin_t**2),
+            lambda node: sin_t,
+        )
+        return _bounded_component_trig_cleanup(cleaned)
+    except Exception:
+        return expr
+
+
+def _bounded_component_trig_cleanup(expr: sp.Expr, *, cancel_ops_limit: int = 900) -> sp.Expr:
+    """Cheap trigonometric cleanup for tensor components.
+
+    Whole-expression ``cancel`` can dominate hard nonmetricity models before
+    ansatz substitution has reduced the metric functions.  Keep the exact same
+    cleanup for small/moderate components, but avoid global cancellation once
+    the expression is already large.
+    """
+    if expr is None:
+        return expr
+    try:
+        ops = sp.count_ops(expr)
+        cleaned = sp.powsimp(expr, force=True)
+        if ops <= cancel_ops_limit:
+            cleaned = sp.cancel(cleaned)
+        if ops <= cancel_ops_limit * 2:
+            cleaned = sp.trigsimp(cleaned, method='fu')
+        return cleaned
+    except Exception:
+        return expr
 
 
 def extract_components(
@@ -354,7 +406,8 @@ def extract_components(
         if i != j:
             continue
 
-        lhs_comps.append(simplify_selected_component(LHS.tensor[0][i][j], f"f(Q) ({i_str},{j_str})"))
+        lhs_comp = _bounded_component_trig_cleanup(_positive_spherical_branch(LHS.tensor[0][i][j]))
+        lhs_comps.append(simplify_selected_component(lhs_comp, f"f(Q) ({i_str},{j_str})"))
         rhs_comps.append(kappa * T_SET.tensor[0][i][j])
 
     return lhs_comps, rhs_comps

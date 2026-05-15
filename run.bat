@@ -4,6 +4,8 @@ title Modified Gravity Studio
 
 cd /d "%~dp0"
 set "PYTHONDONTWRITEBYTECODE=1"
+set "MGS_VERBOSE=false"
+set "MGS_SYMBOLIC_LOGS=false"
 
 echo.
 echo =========================================

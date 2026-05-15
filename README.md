@@ -1,68 +1,101 @@
 # Modified Gravity Studio
 
-Modified Gravity Studio is a browser-based symbolic workbench for modified theories of gravity. It combines a Flask backend, a KaTeX-powered frontend, SymPy-based symbolic manipulation, and Pytearcat tensor tooling to derive field-equation components, solve for matter variables, apply metric ansätze, and inspect diagnostics across cosmological and static backgrounds.
+Modified Gravity Studio is a browser-based symbolic and numerical workbench for modified gravity research. It combines a Flask backend, a KaTeX frontend, SymPy algebra, and Pytearcat tensor tooling to assemble field equations, solve matter variables, evaluate diagnostics, build plots, and scan parameter ranges for supported cosmological and compact backgrounds.
 
-The project is built for exploratory research workflows: select a theory, choose a spacetime background, enter or pick a model, configure matter content, optionally pin model/ansatz parameters such as `C0`, `r0`, `n`, or `a0`, and stream the symbolic pipeline directly in the browser.
+The application is designed around a research workflow: choose a gravity theory, choose a spacetime background, select matter content, set model and ansatz parameters, run the symbolic pipeline, and inspect the resulting matter sector through equations, diagnostics, numerical solve tools, plots, and parameter scans.
 
-## Highlights
+## Capabilities
 
-- Browser UI for theory, background, model, matter, and ansatz selection
-- Progressive streaming updates for long symbolic runs
-- Registry-driven theory and background metadata
-- Built-in model presets and ansatz presets
-- Optional parameter injection for model constants and ansatz constants
-- Support for perfect-fluid, anisotropic-fluid, dust, radiation, and vacuum-compatible workflows
-- Rendered LaTeX output with Mathematica copy/export support
-- Warning-first result handling for equalities such as `rho = p` or `P_r = P_t`
-- Faster diagnostics path built from solved matter variables where appropriate
-- Session cleanup and bounded cache controls for better long-run stability, including full temporary-cache deletion on Quit Server
+- Registry-driven selection for theories, backgrounds, model forms, matter content, and metric ansatz presets
+- Symbolic field-equation assembly for curvature, torsion, and non-metricity based theories
+- Covariant teleparallel torsion pipeline with inertial spin connections for spherical tetrads
+- Matter solving for perfect fluid, anisotropic fluid, dust, radiation, and vacuum cases where supported
+- Static spherical TOV diagnostics for compact backgrounds
+- Numeric residual solving for nonlinear matter systems
+- Plotting of solved matter variables and diagnostics without recomputing the symbolic pipeline
+- Parameter scanning for admissible model and metric parameter windows
+- Exportable LaTeX and Mathematica expressions
+- PNG export for generated plots
+- Bounded cache layers for repeated symbolic, numerical, and plotting workloads
 
 ## Supported Theories
 
-| ID | Theory | Geometry Class | Typical Scalars |
+| ID | Theory | Geometry class | Main scalars |
 | --- | --- | --- | --- |
 | `fR` | `f(R)` gravity | Curvature | `R` |
 | `fRTLm` | `f(R,T,Lm)` gravity | Curvature-matter coupling | `R`, `T_scalar`, `T_mat`, `L` |
 | `fT` | `f(T)` teleparallel gravity | Torsion | `T` |
-| `fTB` | `f(T,B)` gravity | Torsion + boundary term | `T`, `B` |
+| `fTB` | `f(T,B)` gravity | Torsion plus boundary term | `T`, `B` |
 | `fQ` | `f(Q)` symmetric teleparallel gravity | Non-metricity | `Q` |
-| `fQC` | `f(Q,C)` nonmetricity-boundary gravity | Non-metricity + boundary | `Q`, `C` |
+| `fQC` | `f(Q,C)` non-metricity-boundary gravity | Non-metricity plus boundary term | `Q`, `C` |
 
 ## Supported Backgrounds
 
-| ID | Spacetime | Metric Functions |
+| ID | Background | Metric functions |
 | --- | --- | --- |
-| `FRW_flat` | Flat FRW | `a(t)` |
-| `FRW_curved` | Curved FRW with symbolic `k` | `a(t)` |
-| `Bianchi_I` | LRS Bianchi type-I | `A(t)`, `B(t)` |
-| `Bianchi_III` | LRS Bianchi type-III | `A(t)`, `B(t)` |
+| `FRW` | Friedmann-Robertson-Walker with `k = 1, 0, -1` | `a(t)` |
+| `Bianchi_I` | LRS Bianchi type I | `A(t)`, `B(t)` |
+| `Bianchi_III` | LRS Bianchi type III | `A(t)`, `B(t)` |
 | `Kantowski_Sachs` | Kantowski-Sachs | `A(t)`, `B(t)` |
-| `SS_wormhole` | Static spherically symmetric wormhole | `b(r)`, `Phi(r)` |
-| `SS_blackhole` | Static spherically symmetric black hole | `nu_bh(r)`, `lam_bh(r)` |
+| `SS_wormhole` | Static spherical wormhole | `b(r)`, `Phi(r)` |
+| `SS_blackhole` | Static spherical black hole | `nu_bh(r)`, `lam_bh(r)` |
+
+Cosmological backgrounds use time-domain diagnostics and do not expose TOV controls. Static spherical backgrounds use radial-domain diagnostics and expose compact-object tools where the selected matter model supports them.
+
+## Teleparallel Geometry
+
+The torsion theories use a covariant tetrad formulation. Cartesian tetrads use a zero inertial spin connection. Spherical-coordinate tetrads use the standard inertial spin connection so coordinate artifacts from the angular frame do not enter the physical field equations.
+
+The teleparallel connection is assembled as:
+
+```text
+Gamma^rho_mu_nu = e_a^rho (partial_nu e^a_mu + omega^a_b_nu e^b_mu)
+```
+
+The `f(T)` and `f(T,B)` field equations use the Lorentz-projected superpotential:
+
+```text
+S_a^{mu nu} = e_a^rho S_rho^{mu nu}
+```
+
+and the Lorentz-covariant divergence:
+
+```text
+D_mu(e S_a^{mu nu}) =
+partial_mu(e S_a^{mu nu}) - e omega^b_a_mu S_b^{mu nu}
+```
+
+For flat Cartesian backgrounds this reduces to the ordinary derivative because `omega^a_b_mu = 0`.
 
 ## Architecture
 
 ```text
-UI -> Flask API -> symbolic pipeline -> solver/ansatz finalization -> diagnostics -> serializer -> browser results
+Browser UI
+  -> Flask API
+  -> symbolic pipeline
+  -> theory module and stress-energy assembly
+  -> solver and ansatz finalization
+  -> diagnostics and plot data
+  -> serializer
+  -> browser results
 ```
 
-Core modules:
+Additional post-solve routes:
 
-- `api/app.py`: Flask app, task orchestration, streaming progress, session/task lifecycle
-- `core/pipeline.py`: end-to-end orchestration for theory setup, tensor assembly, solving, ansatz application, diagnostics, and serialization
-- `core/solver.py`: simplification helpers, solve strategies, ansatz application, and diagnostic construction
-- `core/results.py`: result serialization, LaTeX/Mathematica export, and display compression
-- `core/ansatz.py`: ansatz parsing and ansatz-parameter substitution
-- `static/` and `templates/`: production frontend assets
-- `docs/`: project documentation
+```text
+/api/numeric/solve  -> pointwise residual solve with scipy
+/api/plot/evaluate  -> lambdified plot series
+/api/plot/scan      -> parameter range scan over solved expressions
+```
 
 ## Quick Start
 
-### Prerequisites
+### Requirements
 
 - Python 3.10+
 - Git
-- A browser with JavaScript enabled
+- A JavaScript-enabled browser
+- Network access during dependency installation
 
 ### Install
 
@@ -70,11 +103,15 @@ Core modules:
 git clone <your-repo-url>
 cd modified-gravity-studio
 python -m venv .venv
+
+# Windows
 .venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
 ```
-
-`requirements.txt` installs Pytearcat from GitHub, so installation requires network access.
 
 ### Run
 
@@ -82,129 +119,136 @@ pip install -r requirements.txt
 python run.py
 ```
 
-Then open `http://localhost:5000`.
+Open `http://localhost:5000`.
 
-On Windows, you can also use:
+Windows launchers are also included:
 
 ```bat
 setup.bat
 run.bat
 ```
 
-## Usage
+The server uses Waitress when available and falls back to the Flask development server.
 
-1. Select a theory.
-2. Select a supported spacetime background.
-3. Choose a model preset or enter a custom model expression.
-4. Select matter content.
+## Working With A Model
+
+1. Select the gravity theory.
+2. Select a compatible background.
+3. Choose a model preset or enter a custom expression.
+4. Select the stress-energy content.
 5. Choose ansatz presets for the active metric functions.
-6. Optionally set model or ansatz constants such as `n`, `C0`, `r0`, `a0`, `Phi0`, or `H0`.
-7. Choose diagnostics if needed.
-8. Run the pipeline and inspect the streamed results.
+6. Provide numeric values for model parameters and ansatz constants where desired.
+7. Select diagnostics.
+8. Run the symbolic pipeline.
+9. Use plotting, numeric solve, and parameter scan tools on the returned expressions.
 
-## Parameter Inputs
-
-The UI can expose theory-specific and ansatz-specific symbols so users can reduce symbolic clutter before solving.
-
-Examples:
-- `C0` in logarithmic boundary models
-- `r0` in exponential or inverse-power shape functions
-- `n` in power-law models
-- `a0`, `H0`, `Phi0`, `M`, `Q` in metric ansätze
-
-Blank inputs remain symbolic. Filled inputs are substituted during parsing and become part of the cache key.
-
-## Output Modes
-
-Each result card supports:
-
-- rendered LaTeX in the browser
-- LaTeX copy/export
-- Mathematica copy/export generated from the SymPy expression, not from LaTeX text
-
-For large expressions, the renderer may expose a small set of filtered display definitions to compress repeated kernels without over-fragmenting the visible output.
+Blank parameter fields remain symbolic. Filled parameter fields are substituted into the relevant symbolic stage and included in cache keys.
 
 ## Diagnostics
 
-Available diagnostics depend on the theory, background, and matter content. The current pipeline supports:
+Available diagnostics depend on the background and matter model.
 
-- energy conditions
-- equation-of-state quantities
-- speed-of-sound / stability terms
+Perfect-fluid outputs use isotropic labels:
 
-Where safe, some diagnostics are built directly from solved matter variables to avoid unnecessary symbolic overhead.
+- `rho`
+- `p`
+- `rho + p`
+- `rho + 3p`
+- `rho - |p|`
+- `omega = p / rho`
+- `c_s^2 = dp / d rho`
 
-## Warnings and Validation
+Anisotropic outputs use directional labels:
 
-The pipeline no longer blocks result display when equalities such as `rho = p` or `P_r = P_t` appear. These are surfaced as warnings so physically meaningful reduced cases still display.
+- `P_r`, `P_t`
+- `NEC_r = rho + P_r`
+- `NEC_t = rho + P_t`
+- `DEC_r = rho - |P_r|`
+- `DEC_t = rho - |P_t|`
+- `omega_r`, `omega_t`, `omega_eff`
+- `cs2_r`, `cs2_t`
 
-Strict validation is still available through environment flags where needed.
+Static spherical TOV output is represented by the general equilibrium relation and the force balance components:
 
-## Performance Notes
+```text
+F_h + F_g + F_a = 0
+```
 
-The pipeline includes several production-oriented safeguards:
+The plotted TOV series focus on hydrostatic force, gravitational force, anisotropic force, and residual.
 
-- bounded caches
-- session/task pruning
-- explicit teardown cleanup after runs
-- fast-path diagnostics where safe
-- display compression tuned to preserve readability
-- browser-side math rendering limited to the final display pass
+## Plotting And Parameter Scans
 
-For additional details, see `docs/PROJECT_DOCUMENTATION.md`.
+The symbolic plot panel evaluates solved expressions over a chosen domain. It uses the model and ansatz values already supplied in the main input panel and exposes any remaining free numeric parameters. Plots can be regenerated with different parameter values without rerunning the symbolic pipeline.
+
+The parameter scan panel samples selected parameter ranges against finite-value checks, energy-condition checks, stability checks, and optional TOV residual checks. It returns accepted ranges, top-scoring samples, a heatmap for two-parameter scans, and a best-point plotting shortcut.
+
+## Cache And Performance Model
+
+The project uses bounded caches with separate responsibilities:
+
+- Geometry cache for background tensors
+- Spin connection and Lorentz-projected superpotential in the teleparallel geometry cache
+- LHS cache for theory tensors
+- Component cache for selected diagonal field-equation components
+- Ansatz cache for metric-function substitutions
+- Reduced/raw equation cache for equation preparation
+- Scalar cache for derived scalar payloads
+- Solver simplification cache for repeated expression cleanup
+- Numeric residual compile cache for repeated nonlinear solves
+- Plot expression compile cache for repeated plot and scan evaluation
+- Browser-side request caches for numeric solve, symbolic plots, and parameter scans
+
+Raw and reduced equation cache entries use distinct versioned key prefixes. Ansatz-dependent caches include ansatz selections and ansatz parameter values. Component caches are kept pre-ansatz, so the same extracted tensor component can be reused safely across different metric-function substitutions.
+
+## Environment Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MGS_VERBOSE` | `false` | Enable verbose server logging |
+| `MGS_SYMBOLIC_LOGS` | `false` | Allow symbolic library stdout in the terminal |
+| `MGS_LOCAL` | `true` | Enable the local Quit Server action |
+| `MGS_WORKERS` | `2` | Pipeline worker count |
+| `MGS_MAX_COMPLETED_TASKS` | `24` | Completed task retention limit |
+| `MGS_MAX_TASK_AGE_SECONDS` | `900` | Completed task retention age |
+| `MGS_MAX_REDUCED_CACHE` | `8` | Reduced/raw equation cache limit |
+| `MGS_MAX_ANSATZ_CACHE` | `16` | Ansatz cache limit |
+| `MGS_MAX_LHS_CACHE` | `8` | Theory LHS cache limit |
+| `MGS_MAX_COMPONENT_CACHE` | `48` | Component cache limit |
+| `MGS_MAX_SCALAR_CACHE` | `16` | Scalar cache limit |
 
 ## Repository Layout
 
 ```text
 api/
+  app.py
+  routes/
+    numeric.py
+    plotting.py
+    _logging.py
 core/
+  pipeline.py
+  pipeline_cache.py
+  solver.py
+  results.py
+  ansatz.py
+  geometry.py
+  config.py
+  diagnostics/
+  numerics/
+  plotting/
+  registry/
+  stress_energy/
+  theories/
 docs/
 static/
 templates/
 run.py
-run.bat
-setup.bat
 requirements.txt
-README.md
+setup.bat
+run.bat
 ```
 
-## Development Notes
+## Documentation
 
-- SymPy and Pytearcat drive most of the symbolic workload.
-- Frontend rendering uses KaTeX.
-- Progress updates are streamed to the browser during long runs.
-- The project is intended for symbolic experimentation, so some heavy models may still require theory-aware parameter choices for compact output.
-
-## Roadmap
-
-This repository is actively evolving. Planned additions include more gravity theories, perturbative modules, broader diagnostic support, and further theory-specific optimization layers.
-
-## Launcher scripts
-
-- `run.bat`: original lightweight launcher for existing users with Python already installed
-- `bat_old.bat`: backup copy of the original launcher style
-- `setup_new_user.bat`: first-time setup for new users
-- `run_new_user.bat`: launcher that prefers the project virtual environment when available
-
-
-## Display simplifier modes
-
-The UI now exposes two display modes:
-
-- `Fast mode`: conservative, lower-overhead output shaping intended for routine runs and large nested solutions.
-- `Heavy simplifier mode`: stronger bounded display simplification for harder transcendental, logarithmic, and sqrt-heavy outputs.
-
-These modes only affect display formatting. They do not change the core field-equation solve.
-
-## Recent note
-
-- Stability diagnostics now force evaluation of remaining partial derivatives even in Fast mode, so displayed `c_s^2` expressions do not contain unevaluated `\partial/\partial` artifacts.
-
-
-## Session Cleanup
-
-When you click **Quit Server** in the frontend, the backend now clears temporary render caches, solver caches, pipeline caches, geometry caches, disk cache folders, and Python bytecode caches before shutdown.
-
-## Recent UI/diagnostic fix
-
-- Perfect-fluid diagnostics now use isotropic pressure labels `p`, `\rho + p`, `\rho + 3p`, `\rho - |p|`, and `c_s^2 = dp/d\rho`; anisotropic labels are shown only for anisotropic-fluid runs.
+- `docs/PROJECT_DOCUMENTATION.md` describes the module layout and runtime flow.
+- `docs/pipeline_working_and_solving_strategy.md` describes the symbolic pipeline, solving strategy, and cache boundaries.

@@ -34,39 +34,15 @@ class MetricContext:
     metric_tensor: Any = None
 
 
-# ─── Flat FRW ────────────────────────────────────────────────────────────────
 
-def create_FRW_flat() -> MetricContext:
-    ctx = MetricContext()
-    ctx.coord_index = {'t': 0, 'x': 1, 'y': 2, 'z': 3}
-    ctx.independent_coord_name = 't'
-    ctx.metric_fn_names = ['a']
-    ctx.metric_string = 'ds2 = -dt**2 + a**2*(dx**2 + dy**2 + dz**2)'
-    ctx.vierbein_matrix = [[1, 0, 0, 0], [0, 'a', 0, 0], [0, 0, 'a', 0], [0, 0, 0, 'a']]
-    ctx.vierbein_inv    = [[1, 0, 0, 0], [0, '1/a', 0, 0], [0, 0, '1/a', 0], [0, 0, 0, '1/a']]
-    ctx.canonical_index_pairs = {
-        'perfect_fluid': [('t', 't'), ('x', 'x')],
-        'dust':          [('t', 't')],
-        'radiation':     [('t', 't')],
-        'vacuum':        [('t', 't')],
-    }
-    ctx.unknowns_for_set = {
-        'perfect_fluid': ['rho', 'p'],
-        'dust':          ['rho'],
-        'radiation':     ['rho'],
-        'vacuum':        ['Lambda'],
-    }
-    return ctx
+# ─── FRW ──────────────────────────────────────────────────────────────
 
-
-# ─── Curved FRW ──────────────────────────────────────────────────────────────
-
-def create_FRW_curved(k: int = 0) -> MetricContext:
+def create_FRW(k: int = 0) -> MetricContext:
     ctx = MetricContext()
     ctx.coord_index = {'t': 0, 'r': 1, 'theta': 2, 'phi': 3}
     ctx.independent_coord_name = 't'
     ctx.metric_fn_names = ['a']
-    ctx.curvature_k = sp.Symbol('k')
+    ctx.curvature_k = sp.Integer(k)
     ctx.metric_string = 'ds2 = -dt**2 + a**2/(1 - k*r**2)*dr**2 + a**2*r**2*dtheta**2 + a**2*r**2*sin(theta)**2*dphi**2'
     ctx.canonical_index_pairs = {
         'perfect_fluid': [('t', 't'), ('r', 'r')],
@@ -179,13 +155,13 @@ def create_SS_wormhole() -> MetricContext:
     ctx.spatial_vector_contravariant = None
     ctx.canonical_index_pairs = {
         'perfect_fluid': [('t', 't'), ('r', 'r')],
-        'dust':          [('t', 't'), ('r', 'r')],
+        'dust':          [('t', 't')],
         'vacuum':        [('t', 't')],
         'anisotropic':   [('t', 't'), ('r', 'r'), ('theta', 'theta')],
     }
     ctx.unknowns_for_set = {
         'perfect_fluid': ['rho', 'p'],
-        'dust':          ['rho', 'p'],
+        'dust':          ['rho'],
         'vacuum':        ['Lambda'],
         'anisotropic':   ['rho', 'P_r', 'P_t'],
     }
@@ -216,8 +192,7 @@ def create_SS_blackhole() -> MetricContext:
 # ─── Registry ────────────────────────────────────────────────────────────────
 
 METRIC_REGISTRY: Dict[str, Callable[[], MetricContext]] = {
-    'FRW_flat':         create_FRW_flat,
-    'FRW_curved':       create_FRW_curved,
+    'FRW':              create_FRW,
     'Bianchi_I':        create_Bianchi_I,
     'Bianchi_III':      create_Bianchi_III,
     'Kantowski_Sachs':  create_Kantowski_Sachs,
@@ -226,8 +201,7 @@ METRIC_REGISTRY: Dict[str, Callable[[], MetricContext]] = {
 }
 
 BACKGROUND_NAMES = {
-    'FRW_flat':         'Flat FRW (isotropic)',
-    'FRW_curved':       'Curved FRW (symbolic k)',
+    'FRW':              'FRW',
     'Bianchi_I':        'LRS Bianchi Type-I',
     'Bianchi_III':      'LRS Bianchi Type-III',
     'Kantowski_Sachs':  'Kantowski-Sachs',
@@ -236,8 +210,7 @@ BACKGROUND_NAMES = {
 }
 
 BACKGROUND_METRIC_LATEX = {
-    'FRW_flat':         r'ds^2 = -dt^2 + a(t)^2\left(dx^2 + dy^2 + dz^2\right)',
-    'FRW_curved':       r'ds^2 = -dt^2 + \frac{a(t)^2}{1-kr^2}dr^2 + a(t)^2 r^2\,d\Omega^2',
+    'FRW':              r'ds^2 = -dt^2 + \frac{a(t)^2}{1-kr^2}dr^2 + a(t)^2 r^2\,d\Omega^2',
     'Bianchi_I':        r'ds^2 = -dt^2 + A(t)^2\,dx^2 + B(t)^2\!\left(dy^2 + dz^2\right)',
     'Bianchi_III':      r'ds^2 = -dt^2 + A(t)^2\,dx^2 + e^{2x}B(t)^2\!\left(dy^2 + dz^2\right)',
     'Kantowski_Sachs':  r'ds^2 = -dt^2 + A(t)^2\,dr^2 + B(t)^2\!\left(d\theta^2 + \sin^2\!\theta\,d\phi^2\right)',
@@ -250,27 +223,17 @@ THEORY_BACKGROUNDS = {
     for theory_id, spec in THEORY_REGISTRY.items()
 }
 
-_FRW_BACKGROUNDS = {'FRW_flat', 'FRW_curved'}
+_FRW_BACKGROUNDS = {'FRW'}
 
 # ─── Symmetry Group Classification (Lie / Isometry Groups) ───────────────────
 BACKGROUND_SYMMETRY_GROUP = {
-    'FRW_flat': {
-        'isometry_group':   r'ISO(3) \times \mathbb{R}',
-        'isometry_dim':     7,
-        'geometry_class':   'FLRW (k=0) — maximally symmetric spatial sections',
-        'Killing_vectors':  6,
-        'spatial_symmetry': r'\mathbb{R}^3 \rtimes SO(3)',
-        'notes': 'Flat cosmology. Homogeneous and isotropic. Cosmological principle holds. '
-                 'Spatial sections are Euclidean 3-space ℝ³.',
-        'lie_algebra':      'iso(3)',
-    },
-    'FRW_curved': {
+    'FRW': {
         'isometry_group':   r'G_k \times \mathbb{R}',
         'isometry_dim':     7,
-        'geometry_class':   'FLRW with symbolic spatial curvature k',
+        'geometry_class':   'FRW cosmology',
         'Killing_vectors':  6,
         'spatial_symmetry': r'\Sigma_k',
-        'notes': 'Spatial sections are maximally symmetric with curvature parameter k kept symbolic.',
+        'notes': 'Spatial sections are maximally symmetric with selectable curvature k = 1, 0, or -1.',
         'lie_algebra':      'g_k',
     },
     'Bianchi_I': {
@@ -330,16 +293,10 @@ BACKGROUND_SYMMETRY_GROUP = {
 
 # ─── Geometry / cosmology context for each background ────────────────────────
 BACKGROUND_GEOMETRY_INFO = {
-    'FRW_flat': {
-        'Friedmann_1':  r'H^2 = \tfrac{8\pi}{3}\rho',
-        'Friedmann_2':  r'\dot{H} = -4\pi(\rho+p)',
-        'curvature':    'k = 0 (flat)',
-        'topology':     r'\mathbb{R}^3 \times \mathbb{R}',
-    },
-    'FRW_curved': {
+    'FRW': {
         'Friedmann_1':  r'H^2 + k/a^2 = \tfrac{8\pi}{3}\rho',
         'Friedmann_2':  r'\dot{H} - k/a^2 = -4\pi(\rho+p)',
-        'curvature':    'symbolic k',
+        'curvature':    'k = 1, 0, or -1',
         'topology':     r'S^3,\ H^3\ \text{or}\ \mathbb{R}^3',
     },
     'Bianchi_I': {
@@ -425,6 +382,6 @@ def get_metric_context(background_id: str, curvature_k: int = 0) -> MetricContex
     """Factory to create metric context for given background."""
     if background_id not in METRIC_REGISTRY:
         raise ValueError(f"Unknown background: {background_id}")
-    if background_id == 'FRW_curved':
-        return METRIC_REGISTRY[background_id]()
+    if background_id == 'FRW':
+        return METRIC_REGISTRY[background_id](curvature_k)
     return METRIC_REGISTRY[background_id]()
