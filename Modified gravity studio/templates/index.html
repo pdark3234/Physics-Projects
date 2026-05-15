@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modified Gravity Studio</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=note-size-20260515">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
@@ -241,6 +241,24 @@
                                 <div id="symbolic-plot-status" class="note" style="margin-top:10px;"></div>
                                 <div id="symbolic-matter-plot-container" class="numeric-plot-container hidden"></div>
                                 <div id="symbolic-plot-anchor"></div>
+                                <div id="parameter-scan-panel" class="parameter-scan-panel hidden">
+                                    <div class="numeric-solve-head">
+                                        <div>
+                                            <h3 class="section-hdr">Parameter Scan</h3>
+                                            <p class="note">Find admissible parameter windows by sampling solved expressions over selected ranges.</p>
+                                        </div>
+                                        <button id="build-parameter-scan-btn" class="btn-secondary">Build Scan</button>
+                                    </div>
+                                    <div id="parameter-scan-controls" class="hidden">
+                                        <h4 class="mini-hdr">Scan Ranges</h4>
+                                        <div class="scan-range-grid" id="parameter-scan-range-controls"></div>
+                                        <h4 class="mini-hdr">Constraints</h4>
+                                        <div class="scan-constraint-list" id="parameter-scan-constraints"></div>
+                                        <button id="run-parameter-scan-btn" class="btn-primary" style="margin-top:12px;">Scan Parameter Ranges</button>
+                                        <div id="parameter-scan-status" class="note" style="margin-top:10px;"></div>
+                                        <div id="parameter-scan-results" class="scan-results hidden"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -336,6 +354,6 @@
 </div>
 
 <script src="{{ url_for('static', filename='app.js') }}?v=numeric-solve-20260515"></script>
-<script src="{{ url_for('static', filename='js/numericSolve.js') }}?v=plot-export-tabs-20260515"></script>
+<script src="{{ url_for('static', filename='js/numericSolve.js') }}?v=scan-plot-best-20260515"></script>
 </body>
 </html>

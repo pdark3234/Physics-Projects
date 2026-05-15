@@ -1545,21 +1545,20 @@ function displayResults(results) {
         } else {
             tovEl.innerHTML = '';
             const tov = results.tov || {};
+            tovEl.appendChild(makeCard(
+                '\\(\\mathrm{General\\ TOV\\ balance}\\)',
+                '-\\frac{dP_r}{dr}-(\\rho+P_r)\\Phi^{\\prime}(r)+\\frac{2(P_t-P_r)}{r}=0'
+            ));
             const tovDefs = [
-                ['mass', 'm(r)'],
-                ['compactness', '2m(r)/r'],
-                ['redshift_gradient', "\\Phi'(r)"],
-                ['pressure_gradient', "dP_r/dr"],
                 ['hydrostatic_force', 'F_h = -dP_r/dr'],
                 ['gravitational_force', "F_g = -(\\rho + P_r)\\Phi'"],
                 ['anisotropic_force', 'F_a = 2(P_t - P_r)/r'],
                 ['residual', 'F_h + F_g + F_a'],
-                ['mass_continuity_residual', "m'(r) - 4\\pi r^2\\rho"],
             ];
             tovDefs.forEach(([key, label]) => {
                 if (tov[key]) tovEl.appendChild(makeCard(`\\(${label}\\)`, tov[key]));
             });
-            if (!tovEl.children.length) {
+            if (tovEl.children.length <= 1) {
                 tovEl.innerHTML = '<p class="note">No TOV terms were returned for this run.</p>';
             }
         }

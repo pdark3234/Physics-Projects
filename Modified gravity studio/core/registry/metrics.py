@@ -155,13 +155,13 @@ def create_SS_wormhole() -> MetricContext:
     ctx.spatial_vector_contravariant = None
     ctx.canonical_index_pairs = {
         'perfect_fluid': [('t', 't'), ('r', 'r')],
-        'dust':          [('t', 't'), ('r', 'r')],
+        'dust':          [('t', 't')],
         'vacuum':        [('t', 't')],
         'anisotropic':   [('t', 't'), ('r', 'r'), ('theta', 'theta')],
     }
     ctx.unknowns_for_set = {
         'perfect_fluid': ['rho', 'p'],
-        'dust':          ['rho', 'p'],
+        'dust':          ['rho'],
         'vacuum':        ['Lambda'],
         'anisotropic':   ['rho', 'P_r', 'P_t'],
     }

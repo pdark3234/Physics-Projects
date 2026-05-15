@@ -1,4 +1,4 @@
-"""
+﻿"""
 Computation Pipeline (All Four Theories)
 
 Orchestrates the full computation flow from input to results.
@@ -36,8 +36,8 @@ import os
 # Per-run tensor registry for cleanup (Fix 2: pytearcat tensor name collisions)
 _pt_tensor_registry: list = []
 
-# ─── Morris-Thorne Performance Fixes Toggle Flags ────────────────────────────
-ENABLE_SS_SANITISE = True          # Fix 3: Sanitise SS background angular components
+# â”€â”€â”€ Morris-Thorne Performance Fixes Toggle Flags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ENABLE_SS_SANITISE = False         # Angular branch cleanup is not used in the normal pipeline.
 
 
 def _log_debug(message: str):
@@ -72,7 +72,7 @@ def _auto_confirm():
 
 
 class Pipeline:
-    """Main computation pipeline — strict spec v6 implementation."""
+    """Main computation pipeline â€” strict spec v6 implementation."""
 
     def __init__(self, event_callback: Callable[[Dict], None] = None):
         self.event_callback = event_callback or (lambda x: None)
@@ -145,7 +145,7 @@ class Pipeline:
             'tov': inp.compute_tov,
         }
 
-        # ── Stage 0: Setup (merged old 0 + 1: validation + metric context) ──────
+        # â”€â”€ Stage 0: Setup (merged old 0 + 1: validation + metric context) â”€â”€â”€â”€â”€â”€
         self.emit('progress', stage=0, label='Setup', pct=5)
         self.check_cancelled()
 
@@ -182,7 +182,7 @@ class Pipeline:
 
         ctx = get_metric_context(inp.background_id, inp.curvature_k)
 
-        # ── Stage 1: Geometry (unchanged from old Stage 2) ─────────────────────
+        # â”€â”€ Stage 1: Geometry (unchanged from old Stage 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         self.emit('progress', stage=1, label='Geometry', pct=20)
         self.check_cancelled()
 
@@ -199,7 +199,7 @@ class Pipeline:
         ctx.metric_fns = {k: v for k, v in live.items()
                           if k in ctx.metric_fn_names}
 
-        # ── Stage 2: Prepare (merged old 3 + 4: pytearcat re-init + model derivatives) ─
+        # â”€â”€ Stage 2: Prepare (merged old 3 + 4: pytearcat re-init + model derivatives) â”€
         self.emit('progress', stage=2, label='Preparing field equations', pct=35)
         self.check_cancelled()
 
@@ -208,7 +208,7 @@ class Pipeline:
             pt = geom.pt_module
             _log_debug("[PIPELINE] Stage 2: Using cached pytearcat module from geometry cache")
         else:
-            # pytearcat is stateful — we must re-define coords/metric in the current thread
+            # pytearcat is stateful â€” we must re-define coords/metric in the current thread
             with _auto_confirm():
                 _reinit_metric(pt, inp.background_id, inp.curvature_k, geom)
             # Store pt module in cache for future runs
@@ -217,7 +217,7 @@ class Pipeline:
         model_derivatives = _compute_model_derivatives(inp, geom)
         last_mark = self._mark(timings, 'prepare', last_mark)
 
-        # ── Stage 3: SET Assembly (unchanged from old Stage 5) ──────────────────
+        # â”€â”€ Stage 3: SET Assembly (unchanged from old Stage 5) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         self.emit('progress', stage=3, label='Assembling stress-energy tensor', pct=50)
         self.check_cancelled()
 
@@ -236,14 +236,14 @@ class Pipeline:
         T_SET = _assemble_set(set_handler, g, inp.theory, spatial_vector)
         last_mark = self._mark(timings, 'stress_energy', last_mark)
 
-        # ── Stage 4: LHS Assembly (unchanged from old Stage 6) ──────────────────
+        # â”€â”€ Stage 4: LHS Assembly (unchanged from old Stage 6) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         self.emit('progress', stage=4, label='Assembling field equation LHS', pct=65)
         self.check_cancelled()
 
         LHS = _assemble_lhs_cached(inp, model_derivatives, geom, ctx, T_SET)
         last_mark = self._mark(timings, 'lhs_assembly', last_mark)
 
-        # ── Stage 5: Solve (merged old 7 + 8: extract components + solve + ansatz) ─
+        # â”€â”€ Stage 5: Solve (merged old 7 + 8: extract components + solve + ansatz) â”€
         self.emit('progress', stage=5, label='Preparing solve inputs', pct=80)
         self.check_cancelled()
 
@@ -290,7 +290,7 @@ class Pipeline:
             last_mark = self._mark(timings, 'reduced_equations', last_mark)
         self.emit('progress', stage=5, label='Checking solve strategy', pct=88)
 
-        # ── fRTLm Non-linear Model Detection and Early-Exit ─────────────────────
+        # â”€â”€ fRTLm Non-linear Model Detection and Early-Exit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if inp.theory == 'fRTLm':
             from core.theories.fRTLm import classify_model
             
@@ -388,7 +388,7 @@ class Pipeline:
                 self.emit('progress', stage=6, label='Rendering results and formatting equations', pct=99)
                 self.emit('complete', stage=6, results=self._results_to_dict(results))
                 return results
-        # ── End Non-linear Detection ────────────────────────────────────────────
+        # â”€â”€ End Non-linear Detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         # Filter out trivial equations (False/True = already satisfied or contradictory)
         valid_equations = []
@@ -405,6 +405,13 @@ class Pipeline:
             if isinstance(eq, (sp.logic.boolalg.BooleanTrue, sp.logic.boolalg.BooleanFalse)):
                 _log_debug(f"[PIPELINE] Skipping SymPy boolean equation: {eq}")
                 continue
+            try:
+                residual = sp.simplify(eq.lhs - eq.rhs)
+                if residual == 0:
+                    _log_debug("[PIPELINE] Skipping identity equation with zero residual")
+                    continue
+            except Exception:
+                pass
             valid_equations.append(eq)
 
         if not valid_equations:
@@ -453,6 +460,11 @@ class Pipeline:
         results.matter_derivatives = matter_derivatives  # Store for deferred diff in speed of sound
         last_mark = self._mark(timings, 'solve_and_ansatz', last_mark)
 
+        solution_names = {str(key) for key in final_solutions}
+        missing = [u for u in unknowns if u not in final_solutions and str(u) not in solution_names]
+        if missing:
+            raise ValueError(f"Incomplete matter solution. Missing: {[str(u) for u in missing]}")
+
         # Map solutions back to result fields
         unknown_map = {str(u): u for u in unknowns}
         def add_warning(message):
@@ -461,7 +473,6 @@ class Pipeline:
             results.warnings.append(message)
 
         _fill_matter_results(results, inp.stress_tensor, final_solutions, unknown_map, add_warning=add_warning)
-        _sanitise_result_angular_artifacts(results, inp.background_id, geom)
 
         # Determine Pr, Pt for derived quantities
         Pr, Pt = _get_pressures(results, inp.stress_tensor)
@@ -469,7 +480,6 @@ class Pipeline:
         # Theory scalars (ansatz-substituted)
         self.emit('progress', stage=5, label='Preparing scalar outputs', pct=96)
         _fill_scalar_results(results, inp, geom, extended_subs)
-        _sanitise_result_angular_artifacts(results, inp.background_id, geom)
 
         # Diagnostic short-circuit: if finalized matter variables vanish identically,
         # derive diagnostics from that vacuum branch directly instead of reusing any
@@ -482,7 +492,7 @@ class Pipeline:
 
         if zero_matter_branch:
             # All matter is identically zero (vacuum solution, e.g. Schwarzschild star).
-            # Short-circuit every diagnostic: EoS ratios are undefined (0/0 → NaN),
+            # Short-circuit every diagnostic: EoS ratios are undefined (0/0 â†’ NaN),
             # energy conditions are trivially satisfied at zero, and speed-of-sound
             # is meaningless without matter.
             if inp.compute_eos:
@@ -569,7 +579,7 @@ class Pipeline:
                 results.tov_mass_continuity_residual = tov.get('mass_continuity_residual')
                 timings['diagnostics_tov'] = time.perf_counter() - t_diag
 
-        # ── Complete ──────────────────────────────────────────────────────────
+        # â”€â”€ Complete â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         total = time.perf_counter() - t0
         timings['total'] = total
         results.timings = timings
@@ -581,10 +591,12 @@ class Pipeline:
 
     def _results_to_dict(self, results: PipelineResults) -> Dict:
         return results_to_dict(results)
-# ─── Helper functions ─────────────────────────────────────────────────────────
+# â”€â”€â”€ Helper functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _build_plot_data(results: PipelineResults, inp: PipelineInput, ctx) -> Dict[str, Any]:
     """Build raw expression payloads for post-solve numerical plotting."""
+    import re
+
     variable = ctx.independent_coord_name or str(ctx.independent_coord or 't')
     is_anisotropic = inp.stress_tensor == 'anisotropic'
     groups: Dict[str, Dict[str, str]] = {
@@ -650,11 +662,42 @@ def _build_plot_data(results: PipelineResults, inp: PipelineInput, ctx) -> Dict[
     if not groups:
         return {'available': False}
 
+    function_names = {
+        'exp', 'log', 'sin', 'cos', 'tan',
+        'sinh', 'cosh', 'tanh', 'sqrt', 'Abs',
+        'pi', 'E',
+    }
+    local_map = {
+        'exp': sp.exp,
+        'log': sp.log,
+        'sin': sp.sin,
+        'cos': sp.cos,
+        'tan': sp.tan,
+        'sinh': sp.sinh,
+        'cosh': sp.cosh,
+        'tanh': sp.tanh,
+        'sqrt': sp.sqrt,
+        'Abs': sp.Abs,
+        'pi': sp.pi,
+        'E': sp.E,
+        variable: sp.Symbol(variable),
+    }
+    expr_strings = [
+        expr_str
+        for series in groups.values()
+        for expr_str in series.values()
+    ]
+    for expr_str in expr_strings:
+        for token in re.findall(r'[A-Za-z_][A-Za-z0-9_]*', str(expr_str)):
+            if token not in function_names and token not in local_map:
+                local_map[token] = sp.Symbol(token)
+
     free_symbols = set()
     for series in groups.values():
         for expr_str in series.values():
             try:
-                free_symbols.update(str(sym) for sym in sp.sympify(expr_str).free_symbols)
+                expr = sp.sympify(expr_str, locals=local_map)
+                free_symbols.update(str(sym) for sym in expr.free_symbols)
             except Exception:
                 pass
     parameters = sorted(name for name in free_symbols if name != variable)
@@ -860,7 +903,7 @@ def _compute_model_derivatives(inp: PipelineInput, geom) -> Dict:
         f_dum = _sympify_model_expr(expr_str, local_map, reserved, inp.model_params)
         f, fR, fT, fL = compute_model_derivatives(f_dum, R_sym, Ts_sym, L_sym)
         R_actual  = scalar_simplify(geom.ricci_scalar, 'R')
-        # T_scalar (SET trace) is not yet known — it depends on SET unknowns;
+        # T_scalar (SET trace) is not yet known â€” it depends on SET unknowns;
         # we substitute after SET assembly. For now pass symbolic Ts_sym.
         # F11 fix: removed dead 'Ts_sym_live = sp.Symbol("T_scalar_live")' that
         # was created here but never used (the real substitution happens in _assemble_lhs).
@@ -1086,7 +1129,7 @@ def _compute_set_trace(stress_tensor: str, rho: sp.Symbol, p: sp.Symbol) -> sp.E
         return sp.Integer(0)
     elif stress_tensor == 'vacuum':
         Lambda = sp.Symbol('Lambda')
-        return -4 * Lambda  # T = g^{μν}(-Λg_{μν}) = -Λ·4 = -4Λ  (signature -,+,+,+)
+        return -4 * Lambda  # T = g^{Î¼Î½}(-Î›g_{Î¼Î½}) = -Î›Â·4 = -4Î›  (signature -,+,+,+)
     elif stress_tensor == 'anisotropic':
         P_r = sp.Symbol('P_r')
         P_t = sp.Symbol('P_t')
@@ -1154,114 +1197,10 @@ def _extract_components(inp, LHS, T_SET, index_pairs, ctx):
 def _component_cache_key(inp, pair):
     index_form = '^,_' if inp.theory in ('fT', 'fTB') else '_,_'
     return (
-        'component_v2_angular', inp.theory, inp.background_id, inp.curvature_k,
+        'component_v6_bounded_nonmetricity_branch', inp.theory, inp.background_id, inp.curvature_k,
         inp.stress_tensor, inp.model_expr, tuple(sorted(inp.model_params.items())),
         inp.matter_lag, index_form, tuple(pair),
     )
-
-
-_SPHERICAL_ANGULAR_BACKGROUNDS = {
-    'FRW',
-    'Kantowski_Sachs',
-    'SS_wormhole',
-    'SS_blackhole',
-}
-
-
-def _sanitise_ss_components(lhs_comps, rhs_comps, background_id, geom, light=False):
-    """
-    Angular sanitisation of spherical-chart components before equation formation.
-    
-    For spherical-chart backgrounds, removes angular dependence by equatorial
-    substitution. This includes static spherical metrics, curved FRW, and
-    Kantowski-Sachs.
-    This eliminates spurious angular terms from pytearcat's component representation.
-    """
-    if not ENABLE_SS_SANITISE:
-        return lhs_comps, rhs_comps
-    
-    if background_id not in _SPHERICAL_ANGULAR_BACKGROUNDS:
-        return lhs_comps, rhs_comps
-    
-    # Retrieve angular coordinate symbol from geom.live_symbols
-    live = getattr(geom, 'live_symbols', {})
-    theta = live.get('theta')
-    
-    if theta is None:
-        _log_debug(f"[SANITISE] Warning: theta not found in live_symbols, skipping sanitisation")
-        return lhs_comps, rhs_comps
-    
-    cleaned_lhs = []
-    cleaned_rhs = []
-    
-    for i, (lhs, rhs) in enumerate(zip(lhs_comps, rhs_comps)):
-        if not light:
-            # Cancellation is useful for moderate SS expressions, but it can
-            # dominate runtime for nested exp/log scalar models.
-            lhs = sp.cancel(lhs)
-            rhs = sp.cancel(rhs)
-        
-        lhs = _apply_angular_branch(lhs, theta)
-        rhs = _apply_angular_branch(rhs, theta)
-        
-        # Cancel any residual r² factors symmetrically
-        if not light:
-            lhs = sp.powsimp(lhs, force=True)
-            rhs = sp.powsimp(rhs, force=True)
-        
-        _log_debug(f"[SANITISE] Spherical component ({i},{i}): angular terms removed")
-        
-        cleaned_lhs.append(lhs)
-        cleaned_rhs.append(rhs)
-    
-    return cleaned_lhs, cleaned_rhs
-
-
-def _apply_angular_branch(expr, theta):
-    """Apply the equatorial spherical-chart branch sin(theta)=1, cos(theta)=0.
-
-    F4 fix: also substitute cot(θ), tan(θ), and mixed trig products that SymPy
-    may leave unsimplified after basic sin/cos substitution.
-    """
-    if expr is None or theta is None:
-        return expr
-    try:
-        cleaned = expr.subs(sp.sin(theta), 1).subs(sp.cos(theta), 0)
-        # Squared nodes
-        cleaned = cleaned.subs(sp.sin(theta) ** 2, 1).subs(sp.cos(theta) ** 2, 0)
-        # F4 fix: mixed products that survive the above
-        cleaned = cleaned.subs(sp.sin(theta) * sp.cos(theta), 0)  # sin·cos = 0 at π/2
-        # F4 fix: cot(θ) = cos(θ)/sin(θ) = 0 at π/2; tan(θ) = sin(θ)/cos(θ) → ∞,
-        # but SymPy may represent it symbolically, so substitute before it propagates.
-        cleaned = cleaned.subs(sp.cot(theta), 0)
-        # tan(θ) → zoo at equator; replace any surviving tan(θ) atoms with zoo so
-        # downstream code sees a clear signal rather than a residual angular symbol.
-        cleaned = cleaned.subs(sp.tan(theta), sp.zoo)
-        return cleaned
-    except Exception:
-        return expr
-
-
-def _sanitise_result_angular_artifacts(results: PipelineResults, background_id: str, geom) -> None:
-    """Remove spherical-coordinate angular artifacts from final result fields."""
-    if background_id not in _SPHERICAL_ANGULAR_BACKGROUNDS:
-        return
-    theta = getattr(geom, 'live_symbols', {}).get('theta')
-    if theta is None:
-        return
-    for field in (
-        'R', 'T', 'B', 'T_scalar', 'Lm',
-        'rho', 'p', 'Pr', 'Pt',
-        'NEC_r', 'NEC_t', 'WEC', 'SEC', 'DEC_r', 'DEC_t',
-        'omega_r', 'omega_t', 'omega_eff', 'cs2_r', 'cs2_t',
-        'tov_mass', 'tov_compactness', 'tov_redshift_gradient',
-        'tov_pressure_gradient', 'tov_hydrostatic_force',
-        'tov_gravitational_force', 'tov_anisotropic_force',
-        'tov_residual', 'tov_mass_continuity_residual',
-    ):
-        value = getattr(results, field, None)
-        if value is not None:
-            setattr(results, field, _apply_angular_branch(value, theta))
 
 
 def _get_reduced_equations_cached(
@@ -1270,7 +1209,7 @@ def _get_reduced_equations_cached(
 ):
     """Extract and lightly reduce diagonal equations with a per-process cache."""
     key = (
-        'reduced', inp.theory, inp.background_id, inp.curvature_k,
+        'reduced_v5_bounded_nonmetricity_branch', inp.theory, inp.background_id, inp.curvature_k,
         inp.stress_tensor, inp.model_expr, tuple(sorted(inp.model_params.items())),
         tuple(sorted(inp.ansatz.items())), tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
         inp.matter_lag, bool(light),
@@ -1281,9 +1220,6 @@ def _get_reduced_equations_cached(
         if progress_callback:
             progress_callback('Extracting and simplifying diagonal tensor components', 85)
         lhs_comps, rhs_comps = _extract_components(inp, LHS, T_SET, index_pairs, ctx)
-        lhs_comps, rhs_comps = _sanitise_ss_components(
-            lhs_comps, rhs_comps, inp.background_id, geom, light=light
-        )
         return _reduce_component_equations(
             index_pairs, lhs_comps, rhs_comps, extended_subs,
             light=light,
@@ -1299,7 +1235,7 @@ def _get_raw_equations_cached(
 ):
     """Extract raw diagonal equations for solve-first hard anisotropic runs."""
     key = (
-        'raw_equations_v2', inp.theory, inp.background_id, inp.curvature_k,
+        'raw_equations_v6_bounded_nonmetricity_branch', inp.theory, inp.background_id, inp.curvature_k,
         inp.stress_tensor, inp.model_expr, tuple(sorted(inp.model_params.items())),
         inp.matter_lag, bool(light),
     )
@@ -1309,9 +1245,6 @@ def _get_raw_equations_cached(
         if progress_callback:
             progress_callback('Extracting and simplifying diagonal tensor components', 85)
         lhs_comps, rhs_comps = _extract_components(inp, LHS, T_SET, index_pairs, ctx)
-        lhs_comps, rhs_comps = _sanitise_ss_components(
-            lhs_comps, rhs_comps, inp.background_id, geom, light=light
-        )
         return _raw_component_equations(
             index_pairs, lhs_comps, rhs_comps,
             light=light,
@@ -1614,7 +1547,7 @@ def _fill_scalar_results(results: PipelineResults, inp: PipelineInput,
     cache_key = (
         'scalars', theory,
         geom.live_symbols.get('_background_id', ''),
-        # F10 fix: sort by sp.srepr rather than str() — srepr is deterministic across
+        # F10 fix: sort by sp.srepr rather than str() â€” srepr is deterministic across
         # Python/SymPy versions because it uses the canonical internal repr, whereas
         # str(expr) can change order with internal hash randomisation.
         tuple(sorted(
@@ -1667,6 +1600,12 @@ def _fill_scalar_results(results: PipelineResults, inp: PipelineInput,
         )
         if heavy_matter_scalars:
             _log_debug("[SCALARS] Skipping solved matter scalar substitution for heavy anisotropic fRTLm run")
+            if results.warnings is None:
+                results.warnings = []
+            results.warnings.append(
+                "Scalar display shortcut: anisotropic f(R,T,Lm) T_scalar and Lm are shown with symbolic matter variables "
+                "to avoid an expensive post-solve substitution."
+            )
             results.T_scalar = sub(_compute_set_trace(
                 inp.stress_tensor,
                 sp.Symbol('rho', positive=True),
@@ -1704,3 +1643,4 @@ def _fill_scalar_results(results: PipelineResults, inp: PipelineInput,
         'T_scalar': results.T_scalar,
         'Lm': results.Lm,
     }, _log_debug)
+

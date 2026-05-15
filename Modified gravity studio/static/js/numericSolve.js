@@ -4,6 +4,7 @@
  */
 
 let symbolicPlotCache = new Map();
+let parameterScanCache = new Map();
 let latestEnergyPlot = null;
 
 function setPlotExportButtonsEnabled(enabled) {
@@ -29,6 +30,24 @@ function renderNumericInput(container, name, value = '', placeholder = '1') {
     wrap.appendChild(input);
     container.appendChild(wrap);
     return input;
+}
+
+function readNamedInputs(container) {
+    const values = {};
+    if (!container) return values;
+    container.querySelectorAll('input[data-numeric-name]').forEach((input) => {
+        const name = input.dataset.numericName;
+        if (input.value.trim() !== '') values[name] = input.value.trim();
+    });
+    return values;
+}
+
+function readPlotAxisOptions(container) {
+    const values = readNamedInputs(container);
+    return {
+        y_min: values.y_min || '',
+        y_max: values.y_max || '',
+    };
 }
 
 function setupSymbolicPlotPanel(results) {
@@ -61,6 +80,8 @@ function setupSymbolicPlotPanel(results) {
         paramEl.innerHTML = '';
         renderNumericInput(domainEl, `${spec.variable}_min`, '0.1');
         renderNumericInput(domainEl, `${spec.variable}_max`, '10');
+        renderNumericInput(domainEl, 'y_min', '', 'auto');
+        renderNumericInput(domainEl, 'y_max', '', 'auto');
         renderNumericInput(domainEl, 'points', '300', '300');
 
         const defaults = spec.parameter_defaults || {};
@@ -71,6 +92,7 @@ function setupSymbolicPlotPanel(results) {
             paramEl.innerHTML = '<p class="note">No free numeric parameters detected.</p>';
         }
         show(controls);
+        setupParameterScanPanel(spec);
     };
 
     runBtn.onclick = async () => {
@@ -79,14 +101,6 @@ function setupSymbolicPlotPanel(results) {
         if (!domainEl || !paramEl) return;
         if (status) status.textContent = 'Evaluating solved expressions...';
 
-        const readNamedInputs = (container) => {
-            const values = {};
-            container.querySelectorAll('input[data-numeric-name]').forEach((input) => {
-                const name = input.dataset.numericName;
-                if (input.value.trim() !== '') values[name] = input.value.trim();
-            });
-            return values;
-        };
         const domainValues = readNamedInputs(domainEl);
         const payload = {
             variable: spec.variable,
@@ -113,7 +127,7 @@ function setupSymbolicPlotPanel(results) {
                 if (!resp.ok) throw new Error(data.error || 'Plot evaluation failed');
                 symbolicPlotCache.set(cacheKey, data);
             }
-            renderSymbolicPlotData(data);
+            renderSymbolicPlotData(data, readPlotAxisOptions(domainEl));
             if (status) {
                 const points = data.metadata?.points || 0;
                 status.textContent = `Plotted ${points} samples.${usedCache ? ' Loaded from plot cache.' : ''}`;
@@ -123,6 +137,291 @@ function setupSymbolicPlotPanel(results) {
             if (status) status.textContent = `Error: ${err.message}`;
         }
     };
+}
+
+function setupParameterScanPanel(spec) {
+    const panel = $('parameter-scan-panel');
+    const controls = $('parameter-scan-controls');
+    const buildBtn = $('build-parameter-scan-btn');
+    const runBtn = $('run-parameter-scan-btn');
+    const rangeEl = $('parameter-scan-range-controls');
+    const constraintEl = $('parameter-scan-constraints');
+    const status = $('parameter-scan-status');
+    const resultsEl = $('parameter-scan-results');
+    if (!panel || !controls || !buildBtn || !runBtn || !rangeEl || !constraintEl) return;
+
+    const params = spec.parameters || [];
+    if (!spec.available || !params.length) {
+        hide(panel);
+        hide(controls);
+        return;
+    }
+
+    show(panel);
+    hide(controls);
+    if (status) status.textContent = '';
+    if (resultsEl) {
+        resultsEl.innerHTML = '';
+        hide(resultsEl);
+    }
+
+    buildBtn.onclick = () => {
+        rangeEl.innerHTML = '';
+        constraintEl.innerHTML = '';
+        const defaults = spec.parameter_defaults || {};
+        params.forEach((name) => {
+            const seed = Number(defaults[name] || 1);
+            const lo = Number.isFinite(seed) ? seed - Math.max(1, Math.abs(seed)) : -1;
+            const hi = Number.isFinite(seed) ? seed + Math.max(1, Math.abs(seed)) : 1;
+            const row = document.createElement('div');
+            row.className = 'scan-range-row';
+            row.dataset.scanParam = name;
+            row.innerHTML = `
+                <div class="scan-param-name">${escapeHtml(name)}</div>
+                <label>min<input type="number" step="any" data-scan-field="min" value="${lo}"></label>
+                <label>max<input type="number" step="any" data-scan-field="max" value="${hi}"></label>
+                <label>steps<input type="number" step="1" min="1" max="41" data-scan-field="steps" value="7"></label>
+            `;
+            rangeEl.appendChild(row);
+        });
+
+        const constraints = [
+            ['finite', 'Finite curves', true, 'Reject samples with too many NaN or complex values.'],
+            ['rho_positive', 'rho >= 0', true, 'Require non-negative energy density over the sampled domain.'],
+            ['energy_conditions', 'Energy conditions >= 0', true, 'Require returned energy-condition expressions to stay non-negative.'],
+            ['stability', '0 <= sound speed <= 1', true, 'Require plotted stability curves to remain causal.'],
+            ['tov_residual', 'Small TOV residual', false, 'Require |F_h + F_g + F_a| below the tolerance.'],
+        ];
+        constraintEl.innerHTML = constraints.map(([key, label, checked, desc]) => `
+            <label class="scan-constraint-choice" title="${escapeHtml(desc)}">
+                <input type="checkbox" data-scan-constraint="${key}" ${checked ? 'checked' : ''}>
+                <span>${escapeHtml(label)}</span>
+            </label>
+        `).join('') + `
+            <div class="scan-tolerance-row">
+                <label>Tolerance<input type="number" step="any" data-scan-option="tolerance" value="1e-8"></label>
+                <label>TOV tolerance<input type="number" step="any" data-scan-option="tov_tolerance" value="1"></label>
+                <label>Finite fraction<input type="number" step="any" min="0" max="1" data-scan-option="min_finite_fraction" value="0.95"></label>
+            </div>
+        `;
+        show(controls);
+    };
+
+    runBtn.onclick = async () => {
+        const domainEl = $('symbolic-plot-domain-controls');
+        if (!domainEl) return;
+        const domainValues = readNamedInputs(domainEl);
+        const parameterRanges = {};
+        rangeEl.querySelectorAll('[data-scan-param]').forEach((row) => {
+            const name = row.dataset.scanParam;
+            parameterRanges[name] = {};
+            row.querySelectorAll('[data-scan-field]').forEach((input) => {
+                parameterRanges[name][input.dataset.scanField] = input.value.trim();
+            });
+        });
+        const constraints = {};
+        constraintEl.querySelectorAll('[data-scan-constraint]').forEach((input) => {
+            constraints[input.dataset.scanConstraint] = input.checked;
+        });
+        constraintEl.querySelectorAll('[data-scan-option]').forEach((input) => {
+            constraints[input.dataset.scanOption] = input.value.trim();
+        });
+
+        const payload = {
+            variable: spec.variable,
+            groups: spec.groups || {},
+            parameter_ranges: parameterRanges,
+            constraints,
+            domain: {
+                min: domainValues[`${spec.variable}_min`] || 0.1,
+                max: domainValues[`${spec.variable}_max`] || 10,
+                points: domainValues.points || 160,
+            },
+        };
+        if (status) status.textContent = 'Scanning parameter grid...';
+        try {
+            const cacheKey = JSON.stringify(payload);
+            let data = parameterScanCache.get(cacheKey);
+            const usedCache = Boolean(data);
+            if (!data) {
+                const resp = await fetch('/api/plot/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Parameter scan failed');
+                parameterScanCache.set(cacheKey, data);
+            }
+            renderParameterScanResults(data);
+            if (status) {
+                status.textContent = `Accepted ${data.accepted || 0}/${data.total || 0} samples.${usedCache ? ' Loaded from scan cache.' : ''}`;
+            }
+        } catch (err) {
+            if (status) status.textContent = `Error: ${err.message}`;
+        }
+    };
+}
+
+function renderParameterScanResults(data) {
+    const resultsEl = $('parameter-scan-results');
+    if (!resultsEl) return;
+    const ranges = data.accepted_ranges || {};
+    const best = data.best || null;
+    const rangeRows = Object.entries(ranges).map(([name, range]) => `
+        <tr>
+            <td>${escapeHtml(name)}</td>
+            <td>${range.min === null || range.min === undefined ? 'none' : formatScanNumber(range.min)}</td>
+            <td>${range.max === null || range.max === undefined ? 'none' : formatScanNumber(range.max)}</td>
+        </tr>
+    `).join('');
+    const bestParams = best?.parameters
+        ? Object.entries(best.parameters).map(([k, v]) => `${escapeHtml(k)}=${formatScanNumber(v)}`).join(', ')
+        : 'none';
+    const topSamples = (data.top_samples || []).slice(0, 8);
+    const topRows = topSamples.map((sample, idx) => `
+        <tr>
+            <td>${sample.passed ? 'pass' : 'fail'}</td>
+            <td>${formatScanNumber(sample.score)}</td>
+            <td>${Object.entries(sample.parameters || {}).map(([k, v]) => `${escapeHtml(k)}=${formatScanNumber(v)}`).join(', ')}</td>
+            <td><button class="copy-btn scan-plot-btn" data-scan-sample="${idx}">Plot</button></td>
+        </tr>
+    `).join('');
+    resultsEl.innerHTML = `
+        <div class="scan-summary">
+            <div><strong>${data.accepted || 0}</strong><span>accepted</span></div>
+            <div><strong>${data.total || 0}</strong><span>tested</span></div>
+            <div><strong>${formatScanNumber(100 * (data.acceptance_fraction || 0))}%</strong><span>acceptance</span></div>
+        </div>
+        <div class="scan-best">Best sample: <span>${bestParams}</span> · score ${best ? formatScanNumber(best.score) : 'n/a'}</div>
+        <h4 class="mini-hdr">Accepted Ranges</h4>
+        <table class="scan-table"><thead><tr><th>parameter</th><th>min</th><th>max</th></tr></thead><tbody>${rangeRows}</tbody></table>
+        ${buildScanHeatmapSvg(data.heatmap)}
+        <h4 class="mini-hdr">Top Samples</h4>
+        <table class="scan-table"><thead><tr><th>status</th><th>score</th><th>parameters</th><th>plot</th></tr></thead><tbody>${topRows}</tbody></table>
+    `;
+    const bestRow = resultsEl.querySelector('.scan-best');
+    if (bestRow && best?.parameters) {
+        const button = document.createElement('button');
+        button.className = 'copy-btn scan-plot-best-btn';
+        button.style.marginLeft = '10px';
+        button.textContent = 'Plot best point';
+        button.addEventListener('click', () => applyScanSampleToPlot(best.parameters, true));
+        bestRow.appendChild(button);
+    }
+    resultsEl.querySelectorAll('[data-scan-sample]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const sample = topSamples[Number(btn.dataset.scanSample)];
+            if (sample?.parameters) applyScanSampleToPlot(sample.parameters, true);
+        });
+    });
+    show(resultsEl);
+}
+
+function applyScanSampleToPlot(parameters, runAfter = false) {
+    const paramEl = $('symbolic-plot-param-controls');
+    const runBtn = $('run-symbolic-plot-btn');
+    const status = $('symbolic-plot-status');
+    if (!paramEl) return;
+    Object.entries(parameters || {}).forEach(([name, value]) => {
+        const input = paramEl.querySelector(`input[data-numeric-name="${cssEscape(String(name))}"]`);
+        if (input) input.value = String(value);
+    });
+    if (status) status.textContent = 'Loaded scan sample into plot parameters.';
+    if (runAfter && runBtn) runBtn.click();
+}
+
+function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(value);
+    return value.replace(/["\\]/g, '\\$&');
+}
+
+function formatScanNumber(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return 'n/a';
+    if (Math.abs(num) >= 1000 || (Math.abs(num) > 0 && Math.abs(num) < 0.001)) return num.toExponential(2);
+    return Number(num.toPrecision(4)).toString();
+}
+
+function formatHeatmapTick(value) {
+    const num = Number(value);
+    if (!Number.isFinite(num)) return '';
+    if (num === 0) return '0';
+    const abs = Math.abs(num);
+    if (abs >= 100 || abs < 0.01) return num.toExponential(1);
+    return Number(num.toPrecision(3)).toString();
+}
+
+function sparseTickIndices(length, maxLabels = 6) {
+    if (length <= maxLabels) return Array.from({ length }, (_, i) => i);
+    const out = new Set([0, length - 1]);
+    const denom = maxLabels - 1;
+    for (let i = 1; i < denom; i++) {
+        out.add(Math.round((i * (length - 1)) / denom));
+    }
+    return Array.from(out).sort((a, b) => a - b);
+}
+
+function buildScanHeatmapSvg(heatmap) {
+    if (!heatmap || !Array.isArray(heatmap.cells) || !heatmap.cells.length) return '';
+    const xValues = heatmap.x_values || [];
+    const yValues = heatmap.y_values || [];
+    if (!xValues.length || !yValues.length) return '';
+    const cell = Math.max(30, Math.min(42, Math.floor(420 / Math.max(xValues.length, yValues.length))));
+    const padL = 96;
+    const padT = 36;
+    const padB = 86;
+    const padR = 34;
+    const width = padL + xValues.length * cell + padR;
+    const height = padT + yValues.length * cell + padB;
+    const scoreColor = (score, passed) => {
+        const s = Math.max(0, Math.min(100, Number(score) || 0)) / 100;
+        if (!passed) {
+            const v = Math.round(235 - s * 70);
+            return `rgb(${v},${Math.round(v * 0.86)},${Math.round(v * 0.86)})`;
+        }
+        const r = Math.round(230 - s * 150);
+        const g = Math.round(236 - s * 36);
+        const b = Math.round(220 - s * 150);
+        return `rgb(${r},${g},${b})`;
+    };
+    const cells = heatmap.cells.map((item) => {
+        const xi = xValues.findIndex((v) => Number(v) === Number(item.x));
+        const yi = yValues.findIndex((v) => Number(v) === Number(item.y));
+        if (xi < 0 || yi < 0) return '';
+        const x = padL + xi * cell;
+        const y = padT + (yValues.length - 1 - yi) * cell;
+        return `<rect x="${x}" y="${y}" width="${cell - 2}" height="${cell - 2}" fill="${scoreColor(item.score, item.passed)}"><title>${heatmap.x_param}=${formatScanNumber(item.x)}, ${heatmap.y_param}=${formatScanNumber(item.y)}, score=${formatScanNumber(item.score)}</title></rect>`;
+    }).join('');
+    const xTickSet = new Set(sparseTickIndices(xValues.length, 6));
+    const yTickSet = new Set(sparseTickIndices(yValues.length, 7));
+    const xLabels = xValues.map((v, i) => {
+        if (!xTickSet.has(i)) return '';
+        const x = padL + i * cell + cell / 2;
+        return `
+            <line x1="${x}" y1="${padT + yValues.length * cell}" x2="${x}" y2="${padT + yValues.length * cell + 6}" class="scan-heatmap-tick"/>
+            <text x="${x}" y="${height - 38}" text-anchor="middle" class="scan-heatmap-label scan-heatmap-x-tick">${formatHeatmapTick(v)}</text>
+        `;
+    }).join('');
+    const yLabels = yValues.map((v, i) => {
+        if (!yTickSet.has(i)) return '';
+        const y = padT + (yValues.length - 1 - i) * cell + cell / 2;
+        return `
+            <line x1="${padL - 6}" y1="${y}" x2="${padL}" y2="${y}" class="scan-heatmap-tick"/>
+            <text x="${padL - 12}" y="${y + 4}" text-anchor="end" class="scan-heatmap-label">${formatHeatmapTick(v)}</text>
+        `;
+    }).join('');
+    return `
+        <h4 class="mini-hdr">Score Heatmap</h4>
+        <svg class="scan-heatmap" viewBox="0 0 ${width} ${height}" role="img">
+            <text x="${padL}" y="16" class="scan-heatmap-title">${escapeHtml(heatmap.y_param)} vs ${escapeHtml(heatmap.x_param)}</text>
+            ${cells}
+            ${xLabels}
+            ${yLabels}
+            <text x="${padL + (xValues.length * cell) / 2}" y="${height - 10}" text-anchor="middle" class="scan-heatmap-label scan-heatmap-axis-title">${escapeHtml(heatmap.x_param)}</text>
+            <text x="14" y="${padT + (yValues.length * cell) / 2}" class="scan-heatmap-label scan-heatmap-y">${escapeHtml(heatmap.y_param)}</text>
+        </svg>
+    `;
 }
 
 function setupNumericSolvePanel(results) {
@@ -164,6 +463,8 @@ function setupNumericSolvePanel(results) {
 
         renderNumericInput(domainEl, `${spec.variable}_min`, '0.1');
         renderNumericInput(domainEl, `${spec.variable}_max`, '10');
+        renderNumericInput(domainEl, 'y_min', '', 'auto');
+        renderNumericInput(domainEl, 'y_max', '', 'auto');
         renderNumericInput(domainEl, 'points', '120', '120');
 
         const defaults = spec.parameter_defaults || {};
@@ -234,7 +535,7 @@ function setupNumericSolvePanel(results) {
                 const cached = usedCache ? ' Loaded from numeric cache.' : ' Symbolic equations were not recomputed.';
                 status.textContent = `Converged ${meta.converged_points || 0}/${meta.points || 0} points.${cached}`;
             }
-            renderNumericPlot(data);
+            renderNumericPlot(data, readPlotAxisOptions(domainEl));
             setPlotExportButtonsEnabled(true);
         } catch (err) {
             if (status) status.textContent = `Error: ${err.message}`;
@@ -242,7 +543,7 @@ function setupNumericSolvePanel(results) {
     };
 }
 
-function renderNumericPlot(data) {
+function renderNumericPlot(data, axisOptions = {}) {
     const x = data.x || [];
     if (!x.length) {
         const container = $('numeric-plot-container');
@@ -254,7 +555,7 @@ function renderNumericPlot(data) {
 
     lastNumericPlot = data;
     clearNumericTabPlots();
-    renderNumericPlotInto('numeric-plot-container', 'Matter variables', x, data.solutions || {}, data.variable || 'x', data.warnings);
+    renderNumericPlotInto('numeric-plot-container', 'Matter variables', x, data.solutions || {}, data.variable || 'x', data.warnings, axisOptions);
 
     const diagnostics = data.diagnostics || {};
     renderEnergyConditionPlot(
@@ -273,7 +574,9 @@ function renderNumericPlot(data) {
                 DEC_t: 'DEC_t',
             }
         ),
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
     renderNumericPlotInto(
         'numeric-eos-plot-container',
@@ -283,7 +586,9 @@ function renderNumericPlot(data) {
             pickSeries(diagnostics, ['omega', 'omega_r', 'omega_t', 'omega_eff']),
             { omega: 'omega', omega_r: 'omega_r', omega_t: 'omega_t', omega_eff: 'omega_eff' }
         ),
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
     renderNumericPlotInto(
         'numeric-stability-plot-container',
@@ -293,7 +598,9 @@ function renderNumericPlot(data) {
             pickSeries(diagnostics, ['cs2', 'cs2_r', 'cs2_t']),
             { cs2: 'c_s^2', cs2_r: 'c_s^2_r', cs2_t: 'c_s^2_t' }
         ),
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
     renderNumericPlotInto(
         'numeric-tov-plot-container',
@@ -308,35 +615,43 @@ function renderNumericPlot(data) {
                 residual: 'F_h+F_g+F_a',
             }
         ),
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
 }
 
-function renderSymbolicPlotData(data) {
+function renderSymbolicPlotData(data, axisOptions = {}) {
     const x = data.x || [];
     if (!x.length) return;
     const groups = data.groups || {};
     clearNumericTabPlots();
-    renderNumericPlotInto('symbolic-matter-plot-container', 'Matter variables', x, groups.matter || {}, data.variable || 'x', data.warnings);
+    renderNumericPlotInto('symbolic-matter-plot-container', 'Matter variables', x, groups.matter || {}, data.variable || 'x', data.warnings, axisOptions);
     renderEnergyConditionPlot(
         'Energy conditions',
         x,
         groups.energy_conditions || {},
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
     renderNumericPlotInto(
         'numeric-eos-plot-container',
         'Equation of state',
         x,
         groups.eos || {},
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
     renderNumericPlotInto(
         'numeric-stability-plot-container',
         'Stability',
         x,
         labelSeries(groups.stability || {}, { cs2: 'c_s^2', cs2_r: 'c_s^2_r', cs2_t: 'c_s^2_t' }),
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
     renderNumericPlotInto(
         'numeric-tov-plot-container',
@@ -348,7 +663,9 @@ function renderSymbolicPlotData(data) {
             anisotropic_force: 'F_a',
             residual: 'F_h+F_g+F_a',
         }),
-        data.variable || 'x'
+        data.variable || 'x',
+        [],
+        axisOptions
     );
 }
 
@@ -375,8 +692,8 @@ function clearNumericTabPlots() {
     }
 }
 
-function renderEnergyConditionPlot(title, x, series, variableLabel) {
-    latestEnergyPlot = { title, x, series: series || {}, variableLabel };
+function renderEnergyConditionPlot(title, x, series, variableLabel, warnings = [], axisOptions = {}) {
+    latestEnergyPlot = { title, x, series: series || {}, variableLabel, warnings, axisOptions };
     setupEnergyConditionSelector(series || {});
     renderSelectedEnergyConditionPlot();
 }
@@ -433,7 +750,9 @@ function renderSelectedEnergyConditionPlot() {
         latestEnergyPlot.title,
         latestEnergyPlot.x,
         filtered,
-        latestEnergyPlot.variableLabel
+        latestEnergyPlot.variableLabel,
+        latestEnergyPlot.warnings || [],
+        latestEnergyPlot.axisOptions || {}
     );
 }
 
@@ -453,10 +772,10 @@ function labelSeries(series, labels) {
     return out;
 }
 
-function renderNumericPlotInto(containerId, title, x, series, variableLabel, warnings = []) {
+function renderNumericPlotInto(containerId, title, x, series, variableLabel, warnings = [], axisOptions = {}) {
     const container = $(containerId);
     if (!container) return;
-    const svg = buildNumericPlotSvg(title, x, series, variableLabel);
+    const svg = buildNumericPlotSvg(title, x, series, variableLabel, axisOptions);
     if (!svg) {
         hide(container);
         return;
@@ -468,19 +787,19 @@ function renderNumericPlotInto(containerId, title, x, series, variableLabel, war
     show(container);
 }
 
-function buildNumericPlotSvg(title, x, series, variableLabel) {
+function buildNumericPlotSvg(title, x, series, variableLabel, axisOptions = {}) {
     const names = Object.keys(series || {}).filter((name) =>
         (series[name] || []).some((v) => typeof v === 'number' && Number.isFinite(v))
     );
     if (!names.length) return '';
 
-    const width = 860;
-    const height = 420;
-    const padL = 78;
-    const padT = 34;
-    const padB = 64;
-    const charWidth = 8.4;
-    const legendW = Math.min(220, Math.max(118, 66 + Math.max(...names.map((name) => name.length)) * charWidth));
+    const width = 980;
+    const height = 500;
+    const padL = 94;
+    const padT = 54;
+    const padB = 76;
+    const charWidth = 9.2;
+    const legendW = Math.min(250, Math.max(130, 72 + Math.max(...names.map((name) => name.length)) * charWidth));
     const padR = legendW + 54;
     const plotW = width - padL - padR;
     const plotH = height - padT - padB;
@@ -501,8 +820,10 @@ function buildNumericPlotSvg(title, x, series, variableLabel) {
     };
     const rawMinY = Math.min(...allY);
     const rawMaxY = Math.max(...allY);
-    let minY = percentile(sortedY, 0.02);
-    let maxY = percentile(sortedY, 0.98);
+    const manualMinY = axisOptions && axisOptions.y_min !== '' ? Number(axisOptions.y_min) : NaN;
+    const manualMaxY = axisOptions && axisOptions.y_max !== '' ? Number(axisOptions.y_max) : NaN;
+    let minY = Number.isFinite(manualMinY) ? manualMinY : percentile(sortedY, 0.02);
+    let maxY = Number.isFinite(manualMaxY) ? manualMaxY : percentile(sortedY, 0.98);
     if (!Number.isFinite(minY) || !Number.isFinite(maxY) || minY === maxY) {
         minY = rawMinY;
         maxY = rawMaxY;
@@ -514,9 +835,16 @@ function buildNumericPlotSvg(title, x, series, variableLabel) {
         minY = centerY - minReadableSpan / 2;
         maxY = centerY + minReadableSpan / 2;
     }
+    if (Number.isFinite(manualMinY) && Number.isFinite(manualMaxY) && manualMinY > manualMaxY) {
+        minY = manualMaxY;
+        maxY = manualMinY;
+    }
+    const hasManualY = Number.isFinite(manualMinY) || Number.isFinite(manualMaxY);
     const padY = Math.max(1e-9, (maxY - minY) * 0.06);
-    minY -= padY;
-    maxY += padY;
+    if (!hasManualY) {
+        minY -= padY;
+        maxY += padY;
+    }
     if (minY === maxY) {
         minY -= 1;
         maxY += 1;
@@ -525,12 +853,12 @@ function buildNumericPlotSvg(title, x, series, variableLabel) {
     const sy = (v) => padT + plotH - ((v - minY) / (maxY - minY || 1)) * plotH;
     const fmt = (v, step = null) => {
         if (!Number.isFinite(v)) return '';
-        if (Math.abs(v) >= 1000 || (Math.abs(v) > 0 && Math.abs(v) < 0.01)) return v.toExponential(1);
+        if (Math.abs(v) >= 1000 || (Math.abs(v) > 0 && Math.abs(v) < 0.01)) return v.toExponential(2);
         if (step && Number.isFinite(step) && step > 0) {
-            const decimals = Math.min(8, Math.max(0, Math.ceil(-Math.log10(step)) + 1));
+            const decimals = Math.min(5, Math.max(0, Math.ceil(-Math.log10(step)) + 1));
             return Number(v.toFixed(decimals)).toString();
         }
-        return Number(v.toPrecision(4)).toString();
+        return Number(v.toPrecision(5)).toString();
     };
     const tickValues = (min, max, count = 6) => {
         const values = [];
@@ -543,11 +871,11 @@ function buildNumericPlotSvg(title, x, series, variableLabel) {
     const yStep = yTicks.length > 1 ? Math.abs(yTicks[1] - yTicks[0]) : null;
     const xTickSvg = xTicks.map((v) => `
         <line x1="${sx(v).toFixed(2)}" y1="${padT + plotH}" x2="${sx(v).toFixed(2)}" y2="${padT + plotH + 5}" class="plot-tick"/>
-        <text x="${sx(v).toFixed(2)}" y="${padT + plotH + 22}" class="plot-tick-label" text-anchor="middle">${fmt(v, xStep)}</text>
+        <text x="${sx(v).toFixed(2)}" y="${padT + plotH + 26}" class="plot-tick-label" text-anchor="middle">${fmt(v, xStep)}</text>
     `).join('');
     const yTickSvg = yTicks.map((v) => `
         <line x1="${padL - 5}" y1="${sy(v).toFixed(2)}" x2="${padL}" y2="${sy(v).toFixed(2)}" class="plot-tick"/>
-        <text x="${padL - 10}" y="${(sy(v) + 4).toFixed(2)}" class="plot-tick-label" text-anchor="end">${fmt(v, yStep)}</text>
+        <text x="${padL - 12}" y="${(sy(v) + 4).toFixed(2)}" class="plot-tick-label" text-anchor="end">${fmt(v, yStep)}</text>
     `).join('');
     const zeroLine = (minY < 0 && maxY > 0)
         ? `<line x1="${padL}" y1="${sy(0).toFixed(2)}" x2="${padL + plotW}" y2="${sy(0).toFixed(2)}" class="plot-zero-line"/>`
@@ -588,23 +916,24 @@ function buildNumericPlotSvg(title, x, series, variableLabel) {
         </g>
     `;
     return `
-        <div class="numeric-plot-title">${escapeHtml(title)}</div>
         <svg viewBox="0 0 ${width} ${height}" class="numeric-plot" role="img">
             <style>
                 .plot-frame{fill:#fff;stroke:#000;stroke-width:1}
                 .plot-tick{stroke:#000;stroke-width:1}
-                .plot-tick-label{fill:#000;font:13px monospace}
+                .plot-tick-label{fill:#000;font:14px 'Cascadia Mono','Consolas',monospace}
                 .plot-zero-line{stroke:#000;stroke-width:1.2}
-                .plot-label{fill:#000;font:italic 16px Georgia,serif}
+                .plot-label{fill:#000;font:italic 19px 'Cambria Math',Georgia,serif}
+                .plot-title{fill:#000;font:700 18px 'Cascadia Mono','Consolas',monospace}
                 .plot-legend-box{fill:#fff;stroke:#000;stroke-width:1.2}
-                .plot-legend-label{fill:#000;font:14px monospace}
+                .plot-legend-label{fill:#000;font:15px 'Cascadia Mono','Consolas',monospace}
             </style>
+            <text x="${width / 2}" y="28" class="plot-title" text-anchor="middle">${escapeHtml(title)}</text>
             <rect x="${padL}" y="${padT}" width="${plotW}" height="${plotH}" class="plot-frame"/>
             ${zeroLine}
             ${xTickSvg}
             ${yTickSvg}
-            <text x="${padL + plotW / 2}" y="${height - 18}" class="plot-label" text-anchor="middle">${escapeHtml(variableLabel)}</text>
-            <text x="22" y="${padT + plotH / 2}" class="plot-label" text-anchor="middle" transform="rotate(-90 22 ${padT + plotH / 2})">Values</text>
+            <text x="${padL + plotW / 2}" y="${height - 20}" class="plot-label" text-anchor="middle">${escapeHtml(variableLabel)}</text>
+            <text x="30" y="${padT + plotH / 2}" class="plot-label" text-anchor="middle" transform="rotate(-90 30 ${padT + plotH / 2})">Values</text>
             ${paths}
             ${legendSvg}
         </svg>

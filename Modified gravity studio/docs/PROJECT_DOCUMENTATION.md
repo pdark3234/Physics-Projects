@@ -1,315 +1,195 @@
 # Project Documentation
 
-## 1. Overview
+## Overview
 
-Modified Gravity Studio is a symbolic computation platform for modified gravity research. It provides a browser interface over a Flask backend and a symbolic core built around SymPy and Pytearcat. The application lets a user move from a theory choice to solved matter-sector expressions with progress feedback and export-friendly output.
+Modified Gravity Studio is a local web application for symbolic and numerical modified-gravity workflows. It provides a guided browser interface over a Flask API and a SymPy/Pytearcat symbolic core. The application derives field-equation components, solves matter variables, applies metric ansatz choices, builds diagnostics, evaluates plots, solves nonlinear residual systems numerically, and scans parameter ranges.
 
-Supported workflows include:
+The project keeps symbolic solving, numerical post-processing, and browser rendering as separate layers. This keeps expensive algebra inside controlled backend stages while the frontend focuses on selection, progress display, plotting, and export.
 
-- comparing theories across standard backgrounds
-- prototyping custom model functions
-- applying metric ansätze
-- deriving `rho`, `p`, `P_r`, `P_t`, geometric scalars, and diagnostics
-- exporting expressions to LaTeX or Mathematica
-- solving field-equation residuals numerically over a 1D domain
-- evaluating and plotting solved symbolic expressions over a user-defined domain
-
----
-
-## 2. High-Level Flow
+## Runtime Flow
 
 ```text
 Frontend form
-  -> API request
-  -> pipeline setup
-  -> geometry / tensor preparation
-  -> field-equation assembly
-  -> solve strategy selection
-  -> ansatz application
-  -> final symbolic outputs
-  -> diagnostics
+  -> Flask task endpoint
+  -> PipelineInput
+  -> geometry cache
+  -> model derivative preparation
+  -> stress-energy assembly
+  -> theory LHS assembly
+  -> selected component extraction
+  -> matter solve
+  -> ansatz finalization
+  -> diagnostics and plot data
   -> serialization
-  -> streamed UI result
+  -> browser result cards
 ```
 
-Two additional routes run alongside the main symbolic pipeline:
+Post-solve numerical routes:
 
 ```text
-/api/numeric/solve  -> residual export -> pointwise scipy solver -> numeric diagnostics
-/api/plot/evaluate  -> symbolic lambdify -> pointwise numpy evaluation -> plot series
+/api/numeric/solve  -> residual lambdify -> scipy root solve -> numeric diagnostics
+/api/plot/evaluate  -> expression lambdify -> numpy series evaluation
+/api/plot/scan      -> expression lambdify -> grid scan -> score and heatmap
 ```
 
-The important architectural rule is that solving and simplification belong to the solve/finalization stages, while the render stage is reserved for display conversion.
-
----
-
-## 3. Main Components
+## API Modules
 
 ### `api/app.py`
 
-Responsible for:
-
-- request handling and routing
-- background task execution via threading
-- task lifecycle management (queued, running, complete, error, cancelled)
-- Server-Sent Events progress streaming
-- task pruning, session cleanup, and cache teardown on quit
-
-Task metadata is tracked in an `OrderedDict` keyed by task UUID. Completed tasks are pruned when the pool exceeds `MGS_MAX_COMPLETED_TASKS` or when tasks age past `MGS_MAX_TASK_AGE_SECONDS`.
+Owns Flask app setup, task orchestration, progress streaming, cancellation, task pruning, and local shutdown. Pipeline runs execute in worker threads and stream progress through Server-Sent Events.
 
 ### `api/routes/numeric.py`
 
-Exposes `/api/numeric/solve` (POST). Receives a JSON payload containing residual expressions (as SymPy-serializable strings), domain bounds, unknown names, and parameter values. Delegates to `core.numerics.solve_residual_system` and returns pointwise solutions, numeric diagnostics, and TOV terms.
+Receives residual expressions, unknown names, parameter values, and a domain specification. It delegates to `core.numerics.solve.solve_residual_system` and returns pointwise matter solutions plus numeric diagnostics.
 
 ### `api/routes/plotting.py`
 
-Exposes `/api/plot/evaluate` (POST). Receives a JSON payload containing symbolic expression groups, a domain specification, and parameter values. Delegates to `core.plotting.evaluate_plot_series` and returns evaluated numeric series for each requested quantity.
+Receives symbolic expression groups and parameter values for plotting and scanning. It delegates to `core.plotting.evaluate.evaluate_plot_series` and `core.plotting.evaluate.scan_parameter_ranges`.
 
 ### `api/routes/_logging.py`
 
-Shared utilities for route-level logging: payload summarizers (`summarize_plot_payload`, `summarize_numeric_payload`), error truncation (`clean_error`), and a `quiet_route_output` context manager that suppresses symbolic library output on these routes.
+Provides compact request summaries, route-level error cleanup, and quiet output contexts for numerical and plotting endpoints.
+
+## Core Modules
 
 ### `core/pipeline.py`
 
-Responsible for:
+Coordinates the complete symbolic workflow. It validates registry choices, loads geometry, prepares theory derivatives, assembles stress-energy tensors, extracts equations, invokes the solver, applies ansatz substitutions, computes diagnostics, and prepares plot data.
 
-- constructing `PipelineInput` and returning `PipelineResults`
-- selecting the background and theory path from the registries
-- coordinating geometry and scalar assembly
-- assembling field equations
-- routing to the appropriate solve strategy
-- applying ansätze
-- coordinating diagnostics
-- creating the serializable result payload
+### `core/pipeline_cache.py`
+
+Contains bounded in-memory caches for LHS tensors, selected components, ansatz substitutions, reduced/raw equations, and scalar payloads. Each cache has a dedicated dictionary and an environment-configurable size limit.
 
 ### `core/solver.py`
 
-Responsible for:
-
-- solving matter equations (linear and sequential strategies)
-- post-solve cleanup
-- ansatz application and finalization
-- theory-aware simplification helpers (`fast_simplify`, `solve_final_cleanup`)
-- diagnostic construction
-
-### `core/results.py`
-
-Responsible for:
-
-- converting final SymPy expressions to display payloads
-- LaTeX export
-- Mathematica export using SymPy's Mathematica printer (not derived from LaTeX text)
-- optional display compression via filtered kernel extraction
+Contains matter solve strategies and expression cleanup. Linear matter systems prefer direct `linsolve`; fallback strategies use bounded side-linear isolation where appropriate. Final matter expressions are simplified after ansatz substitution.
 
 ### `core/ansatz.py`
 
-Responsible for:
+Parses metric-function ansatz expressions, builds derivative substitutions, and substitutes user-supplied ansatz constants.
 
-- parsing ansatz expressions
-- building derivative substitutions for metric functions (first and second derivatives)
-- keeping ansatz-driven substitutions consistent with pipeline inputs
+### `core/results.py`
+
+Serializes SymPy expressions for the frontend. It produces rendered LaTeX payloads, copyable LaTeX, and Mathematica syntax from the original SymPy expressions.
 
 ### `core/numerics/solve.py`
 
-Provides `solve_residual_system(payload)`. Compiles residual strings to numpy-compatible lambdas via SymPy, then solves the resulting nonlinear system pointwise across the domain using `scipy.optimize`. Results are returned as named lists of floats (or `None` for non-convergent points), along with convergence metadata and warnings.
+Compiles residual systems with `sp.lambdify` and solves them pointwise over a one-dimensional domain using SciPy. Compilation is cached by residual structure, variable, unknowns, and parameter names.
 
 ### `core/numerics/diagnostics.py`
 
-Provides `compute_numeric_diagnostics` and `compute_numeric_tov`. Both operate on pointwise solution arrays from the numeric solver.
-
-`compute_numeric_diagnostics` computes energy conditions (NEC, WEC, SEC, DEC), EoS parameters, and sound-speed estimates using finite-difference derivatives. Output format adapts automatically between isotropic and anisotropic labeling.
-
-`compute_numeric_tov` computes TOV equilibrium terms for wormhole and black-hole backgrounds. For wormholes, it evaluates `b(r)` and `Phi(r)` from metric-function strings to derive mass, compactness, and redshift gradient. For black holes, it evaluates `nu_bh(r)` and `lam_bh(r)`. All metric-function expressions are compiled from the symbolic ansatz strings, so they stay consistent with the symbolic solve.
+Computes numeric energy conditions, equation-of-state quantities, sound-speed estimates, and TOV force balance from pointwise arrays.
 
 ### `core/plotting/evaluate.py`
 
-Provides `evaluate_plot_series(payload)`. Accepts a `groups` dictionary mapping display names to symbolic expression strings, lambdifies each expression using numpy, evaluates over the requested domain, and returns the series data with metadata and warnings. Expressions that fail to evaluate (complex, non-finite, or missing parameter) are returned as empty series with a per-series warning.
+Compiles solved symbolic expressions for numpy evaluation, returns plot series data, and scores parameter scans. Expression compilation is cached so repeated plot rebuilds with different numeric values avoid repeated SymPy parsing and lambdify work.
 
-### `core/config.py`
+### `core/theories/`
 
-Defines per-stage symbolic timeouts (`STAGE_TIMEOUTS`) and reads environment flags (`ALLOW_SHUTDOWN`, `MAX_WORKERS`, `VERBOSE_LOGS`).
+Contains theory-specific LHS construction for `fR`, `fRTLm`, `fT`, `fTB`, `fQ`, and `fQC`.
 
-### Frontend (`templates/` + `static/`)
+### `core/registry/`
 
-Responsible for:
+Defines supported theories, backgrounds, model presets, ansatz presets, matter compatibility, and component selections.
 
-- theory/background/model/matter/ansatz/parameter selection
-- streaming progress display (SSE)
-- result card rendering with KaTeX
-- clipboard export for LaTeX and Mathematica
-- warning banners and user-facing messaging
-- numeric solve UI: domain/parameter input, result table, energy-condition and TOV charts
-- symbolic plot UI: domain/parameter input, chart rendering
+## Frontend Modules
 
----
+### `templates/index.html`
 
-## 4. Supported Problem Classes
+Defines the application shell, input panels, result tabs, plot controls, numeric solve controls, and scan controls.
 
-Curvature theories: `f(R)`, `f(R,T,Lm)`
+### `static/app.js`
 
-Torsion theories: `f(T)`, `f(T,B)`
+Handles theory/background/model interactions, request submission, progress streaming, result rendering, warning display, and browser-side task state.
 
-Non-metricity theories: `f(Q)`, `f(Q,C)`
+### `static/js/numericSolve.js`
 
-Backgrounds: FRW (flat/closed/open), anisotropic cosmologies (Bianchi I, Bianchi III, Kantowski–Sachs), and static spherically symmetric systems (wormhole, black hole).
+Handles numeric solve controls, symbolic plot controls, parameter scan controls, plot SVG rendering, PNG export, component selection, and browser-side plot/scan caches.
 
----
+### `static/style.css`
 
-## 5. Parameters and Symbol Management
+Provides the dark application shell, control layout, result card styling, plot styling, and scan visualization styling.
 
-One recurring issue in symbolic gravity workflows is uncontrolled growth in free constants. The project supports user-supplied substitutions for theory/model parameters and ansatz constants.
+## Supported Problem Classes
 
-Examples: `C0`, `Q0`, `T0`, `r0`, `n`, `a0`, `H0`, `Phi0`, `M`, `Q`.
+Curvature:
 
-These values are substituted before solving where possible and are included in cache keys so reruns do not reuse stale symbolic results. Blank inputs remain symbolic.
+- `f(R)`
+- `f(R,T,Lm)`
 
----
+Torsion:
 
-## 6. Simplification Strategy
+- `f(T)`
+- `f(T,B)`
 
-The project intentionally separates simplification concerns:
+Non-metricity:
 
-- equation reduction uses light structural cleanup
-- the main symbolic cleanup occurs during solving and ansatz finalization
-- diagnostics are computed after solved matter variables are available
-- rendering performs display conversion only
+- `f(Q)`
+- `f(Q,C)`
 
-This avoids a common failure mode where downstream display stages become mathematically active and slow.
+Background categories:
 
-For difficult families such as transcendental, power-like, and sqrt-heavy models, the display layer can apply conservative kernel extraction and filtered compression without mutating the canonical solved expression.
+- Cosmology: FRW
+- Anisotropic cosmology: Bianchi I, Bianchi III, Kantowski-Sachs
+- Static spherical compact backgrounds: wormhole, black hole
 
----
+## Symbol And Parameter Handling
 
-## 7. Diagnostics Strategy
+Model-form parameters and metric ansatz parameters are kept explicit unless the user provides numeric values. Filled inputs are substituted before the relevant solve or evaluation stage and become part of the cache key for that stage.
 
-Symbolic diagnostics include energy conditions, EoS, speed of sound/stability, and TOV equilibrium balance for static spherical runs.
+Common model symbols include `alpha`, `beta`, `gamma`, `lam`, `C0`, `Q0`, and `T0`. Common metric symbols include `a0`, `B0`, `A0`, `H0`, `h`, `r0`, `Phi0`, `M`, and `Q`.
 
-Where safe, diagnostics are constructed directly from solved `rho`, `p`, `P_r`, and `P_t` to avoid redundant symbolic solving. Stability terms remain the most expensive class because they involve derivative-heavy expressions. Stability diagnostics force evaluation of remaining partial derivatives even in Fast display mode so `c_s^2` expressions are fully evaluated.
+The frontend plot tools expose remaining free numeric parameters after a symbolic run. This allows repeated plotting and parameter scans without rerunning the symbolic pipeline.
 
-For static spherical compact backgrounds, the TOV diagnostic is handled by `core.diagnostics.tov` rather than the main solver. It computes the hydrostatic, gravitational, and anisotropic force terms from the solved matter sector and ansatz-substituted metric functions, with equilibrium represented by a zero total residual.
+## Diagnostics
 
-Numeric diagnostics are computed by `core.numerics.diagnostics` from the pointwise solution arrays returned by the numeric solver. They cover the same diagnostic categories and additionally provide mass/compactness and mass-continuity residuals for compact backgrounds.
+Symbolic diagnostics are built from solved matter expressions where possible:
 
----
+- energy conditions
+- equation of state
+- stability / sound speed
+- TOV equilibrium for static spherical compact backgrounds
 
-## 8. Warnings vs Hard Failures
+Numeric diagnostics are computed from pointwise solution arrays:
 
-The project favors warning-first behavior for physically meaningful equalities such as:
+- energy conditions
+- equation of state
+- sound-speed estimates
+- TOV force terms and residuals
 
-- `rho = p`
-- `P_r = P_t`
+The diagnostic labels adapt to matter content. Perfect fluids use isotropic labels; anisotropic fluids use radial and tangential labels.
 
-These can reflect a reduced or isotropic effective solution rather than a broken solve path. Strict failure can still be enabled when validation is the priority.
+## Static Spherical Coordinate Handling
 
----
+Static spherical equations use the independent radial components selected by the registry, typically `(t,t)`, `(r,r)`, and `(theta,theta)`. The normal pipeline does not replace `sin(theta)` with a numeric angular value. Non-metricity and torsion branches use bounded spherical branch cleanup only for sign and absolute-value artifacts that come from positive angular metric factors. This avoids injecting angular infinities while still keeping physical diagonal components readable.
 
-## 9. Rendering and Export
+## Cache Boundaries
 
-Every displayed expression is built from a SymPy expression and exported in two directions:
+The backend cache layers are intentionally separated:
 
-- LaTeX for browser display and copy
-- Mathematica syntax using SymPy's Mathematica printer
+| Cache | Scope |
+| --- | --- |
+| Geometry cache | background and curvature sign |
+| LHS cache | theory, background, stress content, model, model parameters, matter Lagrangian |
+| Component cache | pre-ansatz selected diagonal component |
+| Ansatz cache | ansatz choice and ansatz parameter values |
+| Reduced/raw equation cache | prepared equations, with distinct versioned prefixes |
+| Scalar cache | derived scalar payloads |
+| Solver simplify cache | expression cleanup results |
+| Numeric compile cache | residual lambdify functions |
+| Plot compile cache | expression lambdify functions |
 
-This avoids invalid workflows where Mathematica export is derived from LaTeX text.
+Raw equations and reduced equations share a storage helper but use distinct key namespaces. Component caches are pre-ansatz by design. Ansatz-sensitive stages include ansatz choices and ansatz parameter values in their keys.
 
-For large expressions, the display layer may keep a small number of filtered named kernels. The goal is to reduce repetition while avoiding unreadable placeholder-heavy output.
+## Cleanup
 
----
+The Quit Server action clears render caches, solver caches, pipeline caches, geometry caches, disk cache folders, and Python bytecode caches before stopping the local server. Task pruning also limits retained completed tasks during long sessions.
 
-## 10. Session Stability
+## Operating Guidance
 
-Long symbolic sessions can degrade if memory and caches grow without control. The project includes:
-
-- bounded caches with configurable size limits
-- task pruning controlled by `MGS_MAX_COMPLETED_TASKS` and `MGS_MAX_TASK_AGE_SECONDS`
-- render-cache cleanup
-- teardown cleanup after runs
-- garbage collection after task completion
-
-These steps reduce the chance that later computations in the same session become slow to start.
-
----
-
-## 11. Numeric Solve Architecture
-
-The numeric solve feature allows users to step outside the fully symbolic workflow for heavy or non-converging configurations.
-
-After a symbolic pipeline run, the frontend can construct a numeric-solve payload by:
-
-1. Exporting field-equation residuals as SymPy-serializable strings.
-2. Declaring the independent variable (e.g., `r` for static or `t` for cosmological), the matter unknowns, and any free parameters.
-3. Sending the payload to `/api/numeric/solve`.
-
-The backend compiles residuals to numpy-compatible functions via `sp.lambdify`, then walks the domain grid and calls `scipy.optimize` rootfinding at each point. Convergence metadata is returned for each point.
-
-Numeric TOV terms are derived from the ansatz metric-function strings at the same grid points, so they are fully consistent with the symbolic ansatz choices.
-
----
-
-## 12. Symbolic Plot Architecture
-
-After a successful symbolic run, solved matter expressions and diagnostic quantities can be plotted over a user-defined domain.
-
-The frontend sends a payload containing:
-
-- a `groups` dictionary mapping display names to solved symbolic expressions (as strings)
-- a domain specification (variable, min, max, points)
-- parameter values for any remaining free symbols
-
-The backend lambdifies each expression with numpy and evaluates it over the domain. Each group is returned as a named list of floats, with `null` for non-finite points and per-series warnings for expressions that cannot be evaluated.
-
----
-
-## 13. Windows-Friendly Operation
-
-The repository includes Windows batch files for setup and execution:
-
-- `setup.bat` — creates a virtual environment and installs dependencies
-- `run.bat` — starts the server using any Python found on PATH
-
----
-
-## 14. Practical Advice for Users
-
-To keep expressions compact and runs faster:
-
-- set harmless scaling constants when possible
-- set power-law exponents when known
-- disable expensive diagnostics during exploratory runs
-- use theory-aware parameter choices to avoid unnecessarily large kernels
-- inspect warnings rather than assuming every equality indicates a bad solve
-- for very heavy configurations, try the numeric solve path after a symbolic run to get pointwise solutions without waiting for full symbolic simplification
-
----
-
-## 15. Environment Flags
-
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `MGS_VERBOSE` | `false` | Enable verbose server-side logging |
-| `MGS_SYMBOLIC_LOGS` | `false` | Pass SymPy/Pytearcat stdout to the terminal |
-| `MGS_LOCAL` | `true` | Allow the Quit Server action |
-| `MGS_WORKERS` | `2` | Number of pipeline worker threads |
-| `MGS_MAX_COMPLETED_TASKS` | `24` | Maximum completed tasks retained in memory |
-| `MGS_MAX_TASK_AGE_SECONDS` | `900` | Age (seconds) before a completed task is pruned |
-
----
-
-## 16. Quit and Cache Cleanup
-
-The frontend Quit Server action calls `/api/quit`, which clears temporary render caches, simplify caches, pipeline caches, geometry caches, disk caches, and Python bytecode caches before the local process exits.
-
----
-
-## 17. Repository Readiness
-
-For GitHub presentation, the repository includes:
-
-- a clear README
-- this documentation file
-- a pipeline strategy document (`pipeline_working_and_solving_strategy.md`)
-- Windows batch scripts for setup and launch
-- stable frontend messages and export behavior
-- reproducible setup instructions
-
-The project can continue to evolve with additional theory modules, perturbative capabilities, and extended numeric/plot workflows.
+- Provide numeric values for harmless scale parameters when expression size matters.
+- Use `h` for power-law exponents in ansatz presets.
+- Use FRW `k = 1, 0, -1` instead of a separate flat-FRW background.
+- Use numeric residual solve for nonlinear matter systems that are difficult to solve symbolically.
+- Use parameter scans to identify workable parameter windows before producing final plots.
+- Keep expensive diagnostics disabled during early exploratory runs.

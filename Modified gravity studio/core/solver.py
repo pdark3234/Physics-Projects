@@ -1555,7 +1555,14 @@ class FieldEquationSolver:
                     _solver_log(f"[SOLVE_COMPONENT] coupled solution for {sym}")
                     return None
 
-                solutions[sym] = solve_final_cleanup(sol)
+                if _is_heavy_transcendental_expr(sol, ops_limit=900):
+                    # For hard f(Q)/f(Q,C) static backgrounds the raw isolated
+                    # component can still contain unevaluated metric functions.
+                    # Cleaning that form before ansatz substitution is far more
+                    # expensive than cleaning the radial expression afterward.
+                    solutions[sym] = sol
+                else:
+                    solutions[sym] = solve_final_cleanup(sol)
 
             print("[SOLVE_COMPONENT] Component isolation succeeded", flush=True)
             return solutions

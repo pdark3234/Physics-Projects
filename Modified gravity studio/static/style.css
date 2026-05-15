@@ -482,7 +482,13 @@ button { cursor: pointer; font-size: 0.84rem; border: none; border-radius: var(-
 .copy-btn.copied { color: var(--success); border-color: var(--success); }
 
 /* ── Notes & hints ──────────────────────────────────────── */
-.note { font-size: 0.75rem; color: var(--muted); margin-top: 4px; display: block; }
+.note {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--muted);
+    margin-top: 6px;
+    display: block;
+}
 .param-hint { font-size: 0.75rem; color: var(--warn); margin-top: 5px; }
 
 /* ── Utility ────────────────────────────────────────────── */
@@ -597,6 +603,179 @@ footer {
     border-radius: 8px;
 }
 
+.parameter-scan-panel {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.scan-range-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.scan-range-row {
+    display: grid;
+    grid-template-columns: 1fr 72px 72px 72px;
+    gap: 8px;
+    align-items: end;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.scan-param-name {
+    color: var(--teal);
+    font: 700 0.82rem var(--mono);
+    padding-bottom: 8px;
+}
+
+.scan-range-row label,
+.scan-tolerance-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--text-dim);
+    font: 0.72rem var(--mono);
+}
+
+.scan-range-row input,
+.scan-tolerance-row input {
+    width: 100%;
+}
+
+.scan-constraint-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scan-constraint-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    font: 0.8rem var(--mono);
+    cursor: pointer;
+}
+
+.scan-constraint-choice input {
+    accent-color: var(--accent);
+}
+
+.scan-tolerance-row {
+    flex-basis: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.scan-results {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.scan-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+}
+
+.scan-summary div {
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+}
+
+.scan-summary strong {
+    display: block;
+    color: var(--gold);
+    font: 700 1.05rem var(--mono);
+}
+
+.scan-summary span {
+    color: var(--text-dim);
+    font-size: 0.74rem;
+}
+
+.scan-best {
+    margin-top: 12px;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+}
+
+.scan-best span {
+    color: var(--teal);
+    font-family: var(--mono);
+}
+
+.scan-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: 0.78rem var(--mono);
+}
+
+.scan-table th,
+.scan-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+}
+
+.scan-table th {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.scan-heatmap {
+    width: 100%;
+    max-height: 520px;
+    margin-top: 8px;
+    background: #ffffff;
+    border-radius: 8px;
+}
+
+.scan-heatmap-label,
+.scan-heatmap-title {
+    fill: #000000;
+    font: 12px var(--mono);
+}
+
+.scan-heatmap-title {
+    font-weight: 700;
+}
+
+.scan-heatmap-y {
+    transform: rotate(-90deg);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.scan-heatmap-tick {
+    stroke: #000000;
+    stroke-width: 1;
+}
+
+.scan-heatmap-axis-title {
+    font-weight: 700;
+}
+
+.scan-heatmap-x-tick {
+    font-size: 11px;
+}
+
 .plot-component-options {
     margin-top: 14px;
     padding: 10px 12px;
@@ -656,7 +835,7 @@ footer {
 
 .plot-tick-label {
     fill: #000000;
-    font: 13px var(--mono);
+    font: 14px "Cascadia Mono", "Consolas", monospace;
 }
 
 .plot-zero-line {
@@ -666,7 +845,7 @@ footer {
 
 .plot-label {
     fill: #000000;
-    font: italic 16px Georgia, "Times New Roman", serif;
+    font: italic 19px "Cambria Math", Georgia, "Times New Roman", serif;
 }
 
 .plot-y-label {
@@ -713,6 +892,7 @@ footer {
 .numeric-plot-title {
     color: #000000;
     background: #ffffff;
-    font: 600 14px var(--mono);
+    font: 700 18px "Cascadia Mono", "Consolas", monospace;
     padding: 8px 0 2px;
+    text-align: center;
 }
