@@ -42,30 +42,6 @@ The application is designed around a research workflow: choose a gravity theory,
 
 Cosmological backgrounds use time-domain diagnostics and do not expose TOV controls. Static spherical backgrounds use radial-domain diagnostics and expose compact-object tools where the selected matter model supports them.
 
-## Teleparallel Geometry
-
-The torsion theories use a covariant tetrad formulation. Cartesian tetrads use a zero inertial spin connection. Spherical-coordinate tetrads use the standard inertial spin connection so coordinate artifacts from the angular frame do not enter the physical field equations.
-
-The teleparallel connection is assembled as:
-
-```text
-Gamma^rho_mu_nu = e_a^rho (partial_nu e^a_mu + omega^a_b_nu e^b_mu)
-```
-
-The `f(T)` and `f(T,B)` field equations use the Lorentz-projected superpotential:
-
-```text
-S_a^{mu nu} = e_a^rho S_rho^{mu nu}
-```
-
-and the Lorentz-covariant divergence:
-
-```text
-D_mu(e S_a^{mu nu}) =
-partial_mu(e S_a^{mu nu}) - e omega^b_a_mu S_b^{mu nu}
-```
-
-For flat Cartesian backgrounds this reduces to the ordinary derivative because `omega^a_b_mu = 0`.
 
 ## Architecture
 
