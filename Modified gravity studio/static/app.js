@@ -119,8 +119,8 @@ const BACKGROUND_ANSATZ_GROUPS = {
         { id: 'power_exp', name: 'Directional power-exponential', functions: { A: 'A0*t**pA*exp(Hx*t)', B: 'B0*t**pB*exp(Hy*t)' }, params: ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy'] },
     ],
     SS_blackhole: [
-        { id: 'schwarzschild', name: 'Schwarzschild', functions: { nu_bh: '1 - 2*M/r', lam_bh: '1/(1 - 2*M/r)' } },
-        { id: 'reissner_nordstrom', name: 'Reissner-Nordstrom', functions: { nu_bh: '1 - 2*M/r + Q**2/r**2', lam_bh: '1/(1 - 2*M/r + Q**2/r**2)' } },
+        { id: 'schwarzschild', name: 'Schwarzschild', display: 'F(r) = 1 - 2*M/r', functions: { nu_bh: '1 - 2*M/r', lam_bh: '1/(1 - 2*M/r)' } },
+        { id: 'reissner_nordstrom', name: 'Reissner-Nordstrom', display: 'F(r) = 1 - 2*M/r + Q**2/r**2', functions: { nu_bh: '1 - 2*M/r + Q**2/r**2', lam_bh: '1/(1 - 2*M/r + Q**2/r**2)' } },
     ],
 };
 
@@ -1075,9 +1075,11 @@ function buildAnsatzFields(bgId) {
                 preview.textContent = 'Custom coupled metric functions.';
             } else {
                 const preset = grouped.find((p) => p.id === groupSel.value) || grouped[0];
-                preview.innerHTML = Object.entries(preset.functions || {})
-                    .map(([fn, expr]) => `<div><strong>${fn}</strong> = ${expr}</div>`)
-                    .join('');
+                preview.innerHTML = preset.display
+                    ? `<div><strong>${preset.display}</strong></div>`
+                    : Object.entries(preset.functions || {})
+                        .map(([fn, expr]) => `<div><strong>${fn}</strong> = ${expr}</div>`)
+                        .join('');
             }
             updateAnsatzParamInputs();
         };

@@ -64,10 +64,16 @@ def compute_tov_diagnostics(
         mass_expr = shape_expr / 2 if shape_expr is not None else None
         redshift_gradient = sp.diff(redshift_expr, r) if redshift_expr is not None else None
     elif background_id == "SS_blackhole":
-        nu_expr = _metric_expr("nu_bh", geom, extended_subs)
-        lam_expr = _metric_expr("lam_bh", geom, extended_subs)
-        mass_expr = r * (1 - 1 / lam_expr) / 2 if lam_expr is not None else None
-        redshift_gradient = sp.diff(sp.log(nu_expr), r) / 2 if nu_expr is not None else None
+        live = getattr(geom, "live_symbols", {}) or {}
+        F_expr = live.get("blackhole_F")
+        if F_expr is not None:
+            mass_expr = r * (1 - F_expr) / 2
+            redshift_gradient = sp.diff(sp.log(F_expr), r) / 2
+        else:
+            nu_expr = _metric_expr("nu_bh", geom, extended_subs)
+            lam_expr = _metric_expr("lam_bh", geom, extended_subs)
+            mass_expr = r * (1 - 1 / lam_expr) / 2 if lam_expr is not None else None
+            redshift_gradient = sp.diff(sp.log(nu_expr), r) / 2 if nu_expr is not None else None
     else:
         return {}
 

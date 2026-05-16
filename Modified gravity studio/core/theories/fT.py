@@ -95,8 +95,11 @@ def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tup
         if i != j:
             continue
 
-        lhs_comp = sp.trigsimp(sp.cancel(LHS.tensor[1][i][j]))
-        lhs_comp = simplify_selected_component(lhs_comp, f"f(T) ({i_str},{j_str})")
+        if getattr(ctx, 'background_id', '') == 'SS_blackhole':
+            lhs_comp = LHS.tensor[1][i][j]
+        else:
+            lhs_comp = sp.trigsimp(sp.cancel(LHS.tensor[1][i][j]))
+            lhs_comp = simplify_selected_component(lhs_comp, f"f(T) ({i_str},{j_str})")
         rhs_comp = kappa * T_SET.tensor[1][i][j]
 
         lhs_comps.append(lhs_comp)

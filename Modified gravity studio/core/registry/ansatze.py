@@ -58,8 +58,8 @@ ANSATZ_PRESET_GROUPS = {
         {'id': 'power_exp', 'name': 'Directional power-exponential', 'functions': {'A': 'A0*t**pA*exp(Hx*t)', 'B': 'B0*t**pB*exp(Hy*t)'}, 'params': ['A0', 'B0', 'pA', 'pB', 'Hx', 'Hy']},
     ],
     'SS_blackhole': [
-        {'id': 'schwarzschild', 'name': 'Schwarzschild', 'functions': {'nu_bh': '1 - 2*M/r', 'lam_bh': '1/(1 - 2*M/r)'}, 'params': ['M']},
-        {'id': 'reissner_nordstrom', 'name': 'Reissner-Nordstrom', 'functions': {'nu_bh': '1 - 2*M/r + Q**2/r**2', 'lam_bh': '1/(1 - 2*M/r + Q**2/r**2)'}, 'params': ['M', 'Q']},
+        {'id': 'schwarzschild', 'name': 'Schwarzschild', 'display': 'F(r) = 1 - 2*M/r', 'functions': {'nu_bh': '1 - 2*M/r', 'lam_bh': '1/(1 - 2*M/r)'}, 'params': ['M']},
+        {'id': 'reissner_nordstrom', 'name': 'Reissner-Nordstrom', 'display': 'F(r) = 1 - 2*M/r + Q**2/r**2', 'functions': {'nu_bh': '1 - 2*M/r + Q**2/r**2', 'lam_bh': '1/(1 - 2*M/r + Q**2/r**2)'}, 'params': ['M', 'Q']},
     ],
 }
 

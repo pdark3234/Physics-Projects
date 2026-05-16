@@ -180,13 +180,15 @@ class Pipeline:
         if not ansatz_ok:
             raise ValueError(ansatz_reason)
 
+        blackhole_metric_variant = _blackhole_metric_variant_from_ansatz(inp)
         ctx = get_metric_context(inp.background_id, inp.curvature_k)
+        ctx.theory = inp.theory
 
         # â”€â”€ Stage 1: Geometry (unchanged from old Stage 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         self.emit('progress', stage=1, label='Geometry', pct=20)
         self.check_cancelled()
 
-        geom = get_geometry(inp.background_id, inp.curvature_k)
+        geom = get_geometry(inp.background_id, inp.curvature_k, blackhole_metric_variant)
         last_mark = self._mark(timings, 'geometry', last_mark)
 
         # Fix 2: Clean up pytearcat tensor names to prevent collisions in next run
@@ -215,6 +217,21 @@ class Pipeline:
             geom.pt_module = pt
 
         model_derivatives = _compute_model_derivatives(inp, geom)
+        ansatz_subs = None
+        extended_subs = None
+        if _use_pre_ansatz_model_derivatives(inp):
+            ansatz_key = (
+                'ansatz', inp.background_id, ctx.independent_coord_name,
+                tuple(sorted(inp.ansatz.items())),
+                tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
+            )
+            ansatz_subs = get_or_compute_ansatz(
+                ansatz_key,
+                lambda: build_ansatz_subs(inp, ctx, _log_debug),
+                _log_debug,
+            )
+            extended_subs = build_extended_subs(ansatz_subs, ctx.independent_coord)
+            model_derivatives = _apply_pre_ansatz_to_model_derivatives(model_derivatives, extended_subs)
         last_mark = self._mark(timings, 'prepare', last_mark)
 
         # â”€â”€ Stage 3: SET Assembly (unchanged from old Stage 5) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -254,17 +271,18 @@ class Pipeline:
         if notebook_solve:
             self.emit('progress', stage=5, label='Using notebook-style anisotropic solve', pct=81)
         self.emit('progress', stage=5, label='Building ansatz substitutions', pct=82)
-        ansatz_key = (
-            'ansatz', inp.background_id, ctx.independent_coord_name,
-            tuple(sorted(inp.ansatz.items())),
-            tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
-        )
-        ansatz_subs = get_or_compute_ansatz(
-            ansatz_key,
-            lambda: build_ansatz_subs(inp, ctx, _log_debug),
-            _log_debug,
-        )
-        extended_subs = build_extended_subs(ansatz_subs, ctx.independent_coord)
+        if ansatz_subs is None or extended_subs is None:
+            ansatz_key = (
+                'ansatz', inp.background_id, ctx.independent_coord_name,
+                tuple(sorted(inp.ansatz.items())),
+                tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
+            )
+            ansatz_subs = get_or_compute_ansatz(
+                ansatz_key,
+                lambda: build_ansatz_subs(inp, ctx, _log_debug),
+                _log_debug,
+            )
+            extended_subs = build_extended_subs(ansatz_subs, ctx.independent_coord)
         if inp.background_id == 'FRW':
             k_sym = geom.live_symbols.get('curvature_k')
             if k_sym is not None:
@@ -406,8 +424,7 @@ class Pipeline:
                 _log_debug(f"[PIPELINE] Skipping SymPy boolean equation: {eq}")
                 continue
             try:
-                residual = sp.simplify(eq.lhs - eq.rhs)
-                if residual == 0:
+                if _is_trivial_equation(eq, inp):
                     _log_debug("[PIPELINE] Skipping identity equation with zero residual")
                     continue
             except Exception:
@@ -434,8 +451,13 @@ class Pipeline:
         solver = FieldEquationSolver(ctx)
         solve_label = 'Solving anisotropic matter with direct linsolve' if notebook_solve else 'Solving matter variables'
         self.emit('progress', stage=5, label=solve_label, pct=90)
+        solutions_are_final = False
         try:
-            if notebook_solve:
+            direct_solutions = _try_direct_diagonal_rhs_solve(inp, valid_equations, unknowns, extended_subs)
+            if direct_solutions is not None:
+                solutions = direct_solutions
+                solutions_are_final = True
+            elif notebook_solve:
                 solutions = solver.solve_anisotropic_notebook(valid_equations, unknowns)
             else:
                 solutions = solver.solve_sequential(valid_equations, unknowns)
@@ -451,12 +473,17 @@ class Pipeline:
                 label=f'Applying ansatz: {sym} {phase}',
                 pct=94,
             )
-        final_solutions, matter_derivatives = solver.apply_ansatz(
-            solutions,
-            ansatz_subs,
-            compute_derivatives=inp.compute_stability,
-            progress_callback=_ansatz_progress,
-        )
+        direct_blackhole_final = solutions_are_final and inp.background_id == 'SS_blackhole'
+        if solutions_are_final and (not inp.compute_stability or direct_blackhole_final):
+            final_solutions = solutions
+            matter_derivatives = None
+        else:
+            final_solutions, matter_derivatives = solver.apply_ansatz(
+                solutions,
+                ansatz_subs,
+                compute_derivatives=inp.compute_stability,
+                progress_callback=_ansatz_progress,
+            )
         results.matter_derivatives = matter_derivatives  # Store for deferred diff in speed of sound
         last_mark = self._mark(timings, 'solve_and_ansatz', last_mark)
 
@@ -545,9 +572,12 @@ class Pipeline:
         if (not zero_matter_branch) and inp.compute_stability:
             t_diag = time.perf_counter()
             self.emit('progress', stage=5, label='Computing stability diagnostics', pct=98)
-            cs2 = solver.compute_speed_of_sound(
-                results.rho, Pr, Pt, ctx.independent_coord, matter_derivatives, lazy=False
-            )
+            if inp.background_id == 'SS_blackhole':
+                cs2 = _compute_blackhole_stability_light(results.rho, Pr, Pt, ctx.independent_coord)
+            else:
+                cs2 = solver.compute_speed_of_sound(
+                    results.rho, Pr, Pt, ctx.independent_coord, matter_derivatives, lazy=False
+                )
             results.cs2_r = cs2['cs2_r']
             if inp.stress_tensor == 'anisotropic':
                 results.cs2_t = cs2['cs2_t']
@@ -751,8 +781,16 @@ def _reinit_metric(pt, background_id, curvature_k, geom):
         g.complete('_,_');  pt.christoffel()
     elif background_id == 'SS_blackhole':
         t, r, th, ph = pt.coords('t,r,theta,phi')
-        nu_bh = pt.fun('nu_bh', 'r');  lam_bh = pt.fun('lam_bh', 'r')
-        g = pt.metric('ds2 = -nu_bh*dt**2 + lam_bh*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2')
+        variant = (ls or {}).get('_blackhole_metric_variant', 'generic')
+        if variant == 'schwarzschild':
+            pt.con('M')
+            g = pt.metric('ds2 = -(1 - 2*M/r)*dt**2 + 1/(1 - 2*M/r)*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2')
+        elif variant == 'reissner_nordstrom':
+            pt.con('M');  pt.con('Q')
+            g = pt.metric('ds2 = -(1 - 2*M/r + Q**2/r**2)*dt**2 + 1/(1 - 2*M/r + Q**2/r**2)*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2')
+        else:
+            nu_bh = pt.fun('nu_bh', 'r');  lam_bh = pt.fun('lam_bh', 'r')
+            g = pt.metric('ds2 = -nu_bh*dt**2 + lam_bh*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2')
         g.complete('_,_');  pt.christoffel()
 
 
@@ -793,6 +831,29 @@ def _coerce_numeric_params(raw_params) -> Dict[str, sp.Expr]:
             except Exception:
                 continue
     return values
+
+
+def _normalise_metric_text(expr: Any) -> str:
+    return str(expr or '').replace(' ', '').replace('^', '**')
+
+
+def _blackhole_metric_variant_from_ansatz(inp: PipelineInput) -> str | None:
+    """Detect standard black-hole presets that can be built as direct metrics."""
+    if inp.background_id != 'SS_blackhole':
+        return None
+    if inp.theory in {'fT', 'fTB'}:
+        return 'generic'
+
+    nu_expr = _normalise_metric_text((inp.ansatz or {}).get('nu_bh'))
+    lam_expr = _normalise_metric_text((inp.ansatz or {}).get('lam_bh'))
+
+    schwarzschild_f = '1-2*M/r'
+    rn_f = '1-2*M/r+Q**2/r**2'
+    if nu_expr == schwarzschild_f and lam_expr == f'1/({schwarzschild_f})':
+        return 'schwarzschild'
+    if nu_expr == rn_f and lam_expr == f'1/({rn_f})':
+        return 'reissner_nordstrom'
+    return 'generic'
 
 
 def _sympify_model_expr(expr_str: str, local_map: Dict[str, sp.Expr], reserved: set[str], model_params) -> sp.Expr:
@@ -1078,8 +1139,9 @@ def _assemble_lhs(inp: PipelineInput, md: Dict, geom, ctx, T_SET) -> Any:
 def _assemble_lhs_cached(inp: PipelineInput, md: Dict, geom, ctx, T_SET) -> Any:
     """Cache assembled theory LHS tensors for repeated identical runs."""
     key = (
-        'lhs', inp.theory, inp.background_id, inp.curvature_k, inp.stress_tensor,
+        'lhs_v3_nonmetricity_pre_ansatz_only', inp.theory, inp.background_id, inp.curvature_k, inp.stress_tensor,
         inp.model_expr, tuple(sorted(inp.model_params.items())),
+        tuple(sorted(inp.ansatz.items())), tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
         inp.matter_lag,
     )
     return get_or_compute_lhs(
@@ -1135,6 +1197,47 @@ def _compute_set_trace(stress_tensor: str, rho: sp.Symbol, p: sp.Symbol) -> sp.E
         P_t = sp.Symbol('P_t')
         return -rho + P_r + 2 * P_t
     return sp.Integer(0)
+
+
+def _use_pre_ansatz_model_derivatives(inp: PipelineInput) -> bool:
+    """Substitute fixed black-hole presets before assembling hard LHS tensors."""
+    # This is a win for nonmetricity, especially logarithmic f(Q,C), because
+    # Q/C model derivatives collapse before the Hessian is built. It is not a
+    # win for torsion theories: pre-substituting Schwarzschild into T/B before
+    # teleparallel tensor assembly can expand the LHS dramatically.
+    return inp.background_id == 'SS_blackhole' and inp.theory in {'fQ', 'fQC'}
+
+
+def _apply_pre_ansatz_to_model_derivatives(md: Dict, extended_subs: Dict) -> Dict:
+    """Apply metric ansatz to model derivative actuals before LHS assembly."""
+    if not extended_subs:
+        return md
+
+    cleaned = {}
+    try:
+        from core.solver import _evaluate_derivative_atoms_locally, _blackhole_post_ansatz_cleanup
+    except Exception:
+        _evaluate_derivative_atoms_locally = None
+        _blackhole_post_ansatz_cleanup = None
+
+    for key, value in md.items():
+        if not isinstance(value, sp.Expr):
+            cleaned[key] = value
+            continue
+        try:
+            expr = value.subs(extended_subs)
+            if _evaluate_derivative_atoms_locally is not None:
+                expr = _evaluate_derivative_atoms_locally(expr)
+            else:
+                expr = expr.doit()
+            if _blackhole_post_ansatz_cleanup is not None:
+                expr = _blackhole_post_ansatz_cleanup(expr)
+            else:
+                expr = sp.powsimp(expr, force=True)
+            cleaned[key] = expr
+        except Exception:
+            cleaned[key] = value
+    return cleaned
 
 
 def _extract_components(inp, LHS, T_SET, index_pairs, ctx):
@@ -1197,8 +1300,9 @@ def _extract_components(inp, LHS, T_SET, index_pairs, ctx):
 def _component_cache_key(inp, pair):
     index_form = '^,_' if inp.theory in ('fT', 'fTB') else '_,_'
     return (
-        'component_v6_bounded_nonmetricity_branch', inp.theory, inp.background_id, inp.curvature_k,
+        'component_v11_blackhole_light_teleparallel', inp.theory, inp.background_id, inp.curvature_k,
         inp.stress_tensor, inp.model_expr, tuple(sorted(inp.model_params.items())),
+        tuple(sorted(inp.ansatz.items())), tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
         inp.matter_lag, index_form, tuple(pair),
     )
 
@@ -1209,7 +1313,7 @@ def _get_reduced_equations_cached(
 ):
     """Extract and lightly reduce diagonal equations with a per-process cache."""
     key = (
-        'reduced_v5_bounded_nonmetricity_branch', inp.theory, inp.background_id, inp.curvature_k,
+        'reduced_v10_blackhole_light_teleparallel', inp.theory, inp.background_id, inp.curvature_k,
         inp.stress_tensor, inp.model_expr, tuple(sorted(inp.model_params.items())),
         tuple(sorted(inp.ansatz.items())), tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
         inp.matter_lag, bool(light),
@@ -1235,8 +1339,9 @@ def _get_raw_equations_cached(
 ):
     """Extract raw diagonal equations for solve-first hard anisotropic runs."""
     key = (
-        'raw_equations_v6_bounded_nonmetricity_branch', inp.theory, inp.background_id, inp.curvature_k,
+        'raw_equations_v11_blackhole_light_teleparallel', inp.theory, inp.background_id, inp.curvature_k,
         inp.stress_tensor, inp.model_expr, tuple(sorted(inp.model_params.items())),
+        tuple(sorted(inp.ansatz.items())), tuple(sorted(getattr(inp, 'ansatz_params', {}).items())),
         inp.matter_lag, bool(light),
     )
 
@@ -1269,6 +1374,130 @@ def _raw_component_equations(index_pairs, lhs_comps, rhs_comps, light=False, pro
             reduced_rhs.append(rhs.doit())
     equations = [sp.Eq(l, r, evaluate=False) for l, r in zip(reduced_lhs, reduced_rhs)]
     return index_pairs, reduced_lhs, reduced_rhs, equations
+
+
+def _try_direct_diagonal_rhs_solve(inp, equations, unknowns, extended_subs=None):
+    """Solve diagonal one-variable equations by reading the RHS coefficient.
+
+    Static black-hole expressions can be huge, but their selected
+    diagonal equations still have the simple form LHS = coefficient * matter.
+    Avoiding SymPy's general solve/collect path here saves most of the runtime.
+    """
+    if not (
+        inp.background_id == 'SS_blackhole'
+        and len(equations) >= len(unknowns)
+    ):
+        return None
+
+    solutions = {}
+    unknown_set = set(unknowns)
+    try:
+        local_derivative_cleanup = None
+        local_result_cleanup = None
+        if inp.background_id == 'SS_blackhole':
+            try:
+                from core.solver import _evaluate_derivative_atoms_locally, _blackhole_post_ansatz_cleanup
+                local_derivative_cleanup = _evaluate_derivative_atoms_locally
+                if inp.theory in {'fQ', 'fQC'}:
+                    local_result_cleanup = _blackhole_post_ansatz_cleanup
+            except Exception:
+                pass
+        for eq, sym in zip(equations[:len(unknowns)], unknowns):
+            if not hasattr(eq, 'lhs') or not hasattr(eq, 'rhs'):
+                return None
+            if any(eq.lhs.has(other) for other in unknown_set):
+                return None
+            coeff = eq.rhs.coeff(sym)
+            if coeff == 0:
+                return None
+            rest = eq.rhs - coeff * sym
+            if any(rest.has(other) for other in unknown_set):
+                return None
+            lhs = eq.lhs
+            if extended_subs:
+                lhs = lhs.subs(extended_subs)
+                coeff = coeff.subs(extended_subs)
+                rest = rest.subs(extended_subs)
+            if local_derivative_cleanup is not None:
+                lhs = local_derivative_cleanup(lhs)
+                coeff = local_derivative_cleanup(coeff)
+                rest = local_derivative_cleanup(rest)
+            sol = (lhs - rest) / coeff
+            if local_result_cleanup is not None:
+                sol = local_result_cleanup(sol)
+            solutions[sym] = sol
+        print("[SOLVE_COMPONENT] Direct diagonal RHS isolation succeeded", flush=True)
+        return solutions
+    except Exception as exc:
+        _log_debug(f"[SOLVE_COMPONENT] Direct diagonal RHS isolation skipped: {exc}")
+        return None
+
+
+def _is_trivial_equation(eq, inp) -> bool:
+    """Detect Eq identities without hanging on hard symbolic log components."""
+    try:
+        residual = eq.lhs - eq.rhs
+        if residual == 0:
+            return True
+        ops = sp.count_ops(residual)
+        hard_static_log = (
+            inp.background_id == 'SS_blackhole'
+            and inp.theory in {'fQ', 'fQC'}
+            and residual.has(sp.log)
+        )
+        if hard_static_log or ops > 1600:
+            light = sp.powsimp(residual, force=True)
+            if light == 0:
+                return True
+            if sp.count_ops(light) <= 350:
+                return sp.cancel(light) == 0
+            return False
+        return sp.simplify(residual) == 0
+    except Exception:
+        return False
+
+
+def _compute_blackhole_stability_light(rho, Pr, Pt, coord):
+    """Fast sound-speed diagnostics for static black-hole expressions."""
+    if coord is None or rho is None or Pr is None:
+        return {'cs2_r': None, 'cs2_t': None}
+    try:
+        from core.solver import lightweight_diagnostic_simplify, _force_eval_partials
+    except Exception:
+        lightweight_diagnostic_simplify = None
+        _force_eval_partials = None
+
+    def deriv(expr):
+        try:
+            d = sp.diff(expr, coord)
+            if _force_eval_partials is not None:
+                d = _force_eval_partials(d)
+            return d
+        except Exception:
+            return None
+
+    def ratio(num, den):
+        if num is None or den is None or den == sp.S.Zero:
+            return None
+        expr = num / den
+        try:
+            expr = sp.powsimp(expr, force=True)
+            if sp.count_ops(expr) <= 600:
+                expr = sp.cancel(expr)
+            if lightweight_diagnostic_simplify is not None:
+                return lightweight_diagnostic_simplify(expr, is_ratio=True)
+            return expr
+        except Exception:
+            return expr
+
+    dRho = deriv(rho)
+    if dRho is None or dRho == sp.S.Zero:
+        return {'cs2_r': None, 'cs2_t': None}
+    dPr = deriv(Pr)
+    dPt = deriv(Pt) if Pt is not None else None
+    cs2_r = ratio(dPr, dRho)
+    cs2_t = ratio(dPt, dRho) if dPt is not None else cs2_r
+    return {'cs2_r': cs2_r, 'cs2_t': cs2_t}
 
 
 def _reduce_component_equations(
@@ -1643,4 +1872,3 @@ def _fill_scalar_results(results: PipelineResults, inp: PipelineInput,
         'T_scalar': results.T_scalar,
         'Lm': results.Lm,
     }, _log_debug)
-

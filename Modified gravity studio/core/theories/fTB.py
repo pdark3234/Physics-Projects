@@ -141,9 +141,15 @@ def extract_components(LHS: Any, T_SET: Any, index_pairs: list, ctx: Any) -> Tup
 
         lhs_raw = LHS.tensor[1][i][j]
         if det_e is not None:
-            lhs_raw = sp.cancel(lhs_raw / det_e)
-            lhs_raw = sp.trigsimp(lhs_raw)
-        lhs_comp = simplify_selected_component(lhs_raw, f"f(T,B) ({i_str},{j_str})")
+            if getattr(ctx, 'background_id', '') == 'SS_blackhole':
+                lhs_raw = lhs_raw / det_e
+            else:
+                lhs_raw = sp.cancel(lhs_raw / det_e)
+                lhs_raw = sp.trigsimp(lhs_raw)
+        if getattr(ctx, 'background_id', '') == 'SS_blackhole':
+            lhs_comp = lhs_raw
+        else:
+            lhs_comp = simplify_selected_component(lhs_raw, f"f(T,B) ({i_str},{j_str})")
         rhs_comp = kappa * T_SET.tensor[1][i][j]
 
         lhs_comps.append(lhs_comp)

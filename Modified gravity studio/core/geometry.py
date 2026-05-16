@@ -88,22 +88,29 @@ class GeometryCache:
 
 # ─── Cache storage ────────────────────────────────────────────────────────────
 
-GEOMETRY_CACHE: Dict[Tuple[str, int], GeometryCache] = {}
+GEOMETRY_CACHE: Dict[Tuple[str, int, str], GeometryCache] = {}
 _cache_lock = threading.Lock()
 
 
-def _get_cache_path(background_id: str, curvature_k: int) -> str:
+def _normalise_metric_variant(background_id: str, metric_variant: Optional[str]) -> str:
+    if background_id != 'SS_blackhole':
+        return 'default'
+    return metric_variant or 'generic'
+
+
+def _get_cache_path(background_id: str, curvature_k: int, metric_variant: Optional[str] = None) -> str:
     """Get disk cache file path for a background."""
-    cache_file = f"{background_id}_{curvature_k}.pkl"
+    variant = _normalise_metric_variant(background_id, metric_variant)
+    cache_file = f"{background_id}_{curvature_k}_{variant}.pkl"
     return os.path.join(GEOMETRY_CACHE_DIR, cache_file)
 
 
-def _load_from_disk(background_id: str, curvature_k: int) -> Optional[GeometryCache]:
+def _load_from_disk(background_id: str, curvature_k: int, metric_variant: Optional[str] = None) -> Optional[GeometryCache]:
     """Load geometry cache from disk if available and valid."""
     if not MGS_DISK_CACHE:
         return None
     
-    cache_path = _get_cache_path(background_id, curvature_k)
+    cache_path = _get_cache_path(background_id, curvature_k, metric_variant)
     if not os.path.exists(cache_path):
         return None
     
@@ -116,36 +123,37 @@ def _load_from_disk(background_id: str, curvature_k: int) -> Optional[GeometryCa
             print(f"[GEOMETRY] Disk cache version mismatch for {background_id}_{curvature_k}, recomputing...")
             return None
         
-        print(f"[GEOMETRY] Loaded from disk cache: {background_id}_{curvature_k}")
+        print(f"[GEOMETRY] Loaded from disk cache: {background_id}_{curvature_k}_{_normalise_metric_variant(background_id, metric_variant)}")
         return data.get('cache')
     except Exception as e:
         print(f"[GEOMETRY] Failed to load disk cache: {e}")
         return None
 
 
-def _save_to_disk(background_id: str, curvature_k: int, cache: GeometryCache) -> None:
+def _save_to_disk(background_id: str, curvature_k: int, cache: GeometryCache, metric_variant: Optional[str] = None) -> None:
     """Save geometry cache to disk."""
     if not MGS_DISK_CACHE:
         return
     
     try:
         os.makedirs(GEOMETRY_CACHE_DIR, exist_ok=True)
-        cache_path = _get_cache_path(background_id, curvature_k)
+        cache_path = _get_cache_path(background_id, curvature_k, metric_variant)
         
         with open(cache_path, 'wb') as f:
             pickle.dump({'version': CACHE_VERSION, 'cache': cache}, f)
         
-        print(f"[GEOMETRY] Saved to disk cache: {background_id}_{curvature_k}")
+        print(f"[GEOMETRY] Saved to disk cache: {background_id}_{curvature_k}_{_normalise_metric_variant(background_id, metric_variant)}")
     except Exception as e:
         print(f"[GEOMETRY] Failed to save disk cache: {e}")
 
 
-def get_geometry(background_id: str, curvature_k: int = 0) -> GeometryCache:
+def get_geometry(background_id: str, curvature_k: int = 0, metric_variant: Optional[str] = None) -> GeometryCache:
     """
     Return cached geometry for background, computing if necessary.
     Thread-safe. Checks disk cache before computing.
     """
-    key = (background_id, curvature_k)
+    variant = _normalise_metric_variant(background_id, metric_variant)
+    key = (background_id, curvature_k, variant)
     
     # Check memory cache first
     with _cache_lock:
@@ -153,21 +161,21 @@ def get_geometry(background_id: str, curvature_k: int = 0) -> GeometryCache:
             return GEOMETRY_CACHE[key]
     
     # Try disk cache before computing
-    disk_cache = _load_from_disk(background_id, curvature_k)
+    disk_cache = _load_from_disk(background_id, curvature_k, variant)
     if disk_cache is not None:
         with _cache_lock:
             GEOMETRY_CACHE[key] = disk_cache
         return disk_cache
     
     # Compute geometry (expensive!)
-    cache = _compute_geometry(background_id, curvature_k)
+    cache = _compute_geometry(background_id, curvature_k, variant)
     
     # Store in memory cache
     with _cache_lock:
         GEOMETRY_CACHE[key] = cache
     
     # Save to disk cache
-    _save_to_disk(background_id, curvature_k, cache)
+    _save_to_disk(background_id, curvature_k, cache, variant)
     
     return cache
 
@@ -189,7 +197,7 @@ def _with_auto_confirm(func):
 # ─── Per-background geometry computation ─────────────────────────────────────
 
 @_with_auto_confirm
-def _compute_geometry(background_id: str, curvature_k: int) -> GeometryCache:
+def _compute_geometry(background_id: str, curvature_k: int, metric_variant: Optional[str] = None) -> GeometryCache:
     """Compute all geometric objects for the given background."""
     import pytearcat as pt
 
@@ -206,7 +214,7 @@ def _compute_geometry(background_id: str, curvature_k: int) -> GeometryCache:
     elif background_id == 'SS_wormhole':
         _compute_SS_wormhole(pt, cache)
     elif background_id == 'SS_blackhole':
-        _compute_SS_blackhole(pt, cache)
+        _compute_SS_blackhole(pt, cache, metric_variant)
     else:
         raise ValueError(f"Unknown background: {background_id!r}")
 
@@ -438,18 +446,48 @@ def _compute_SS_wormhole(pt, cache):
 
 
 
-def _compute_SS_blackhole(pt, cache):
+def _compute_SS_blackhole(pt, cache, metric_variant: Optional[str] = None):
     t, r, theta, phi = pt.coords('t,r,theta,phi')
-    nu_bh = pt.fun('nu_bh', 'r')
-    lam_bh = pt.fun('lam_bh', 'r')
-    g = pt.metric('ds2 = -nu_bh*dt**2 + lam_bh*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2')
+
+    variant = metric_variant or 'generic'
+    direct_f = None
+    if variant == 'schwarzschild':
+        M = pt.con('M')
+        direct_f = 1 - 2 * M / r
+        metric_str = 'ds2 = -(1 - 2*M/r)*dt**2 + 1/(1 - 2*M/r)*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2'
+        live_extra = {'M': M}
+    elif variant == 'reissner_nordstrom':
+        M = pt.con('M')
+        Q = pt.con('Q')
+        direct_f = 1 - 2 * M / r + Q**2 / r**2
+        metric_str = 'ds2 = -(1 - 2*M/r + Q**2/r**2)*dt**2 + 1/(1 - 2*M/r + Q**2/r**2)*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2'
+        live_extra = {'M': M, 'Q': Q}
+    else:
+        nu_bh = pt.fun('nu_bh', 'r')
+        lam_bh = pt.fun('lam_bh', 'r')
+        metric_str = 'ds2 = -nu_bh*dt**2 + lam_bh*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2'
+        live_extra = {'nu_bh': nu_bh, 'lam_bh': lam_bh}
+
+    g = pt.metric(metric_str)
     g.complete('_,_')
     cache.metric_tensor_obj = g
-    cache.live_symbols = {'t': t, 'r': r, 'theta': theta, 'phi': phi, 'nu_bh': nu_bh, 'lam_bh': lam_bh}
+    cache.live_symbols = {
+        't': t,
+        'r': r,
+        'theta': theta,
+        'phi': phi,
+        '_blackhole_metric_variant': variant,
+    }
+    cache.live_symbols.update(live_extra)
     cache.tensor_names.append('g')
     _curvature_path(pt, cache)
-    en2 = sp.sqrt(nu_bh)
-    el2 = sp.sqrt(lam_bh)
+    if direct_f is not None:
+        en2 = sp.sqrt(direct_f)
+        el2 = 1 / sp.sqrt(direct_f)
+        cache.live_symbols['blackhole_F'] = direct_f
+    else:
+        en2 = sp.sqrt(nu_bh)
+        el2 = sp.sqrt(lam_bh)
     vierbein_m = [
         [en2, 0,    0,                   0],
         [0,   el2,  0,                   0],
@@ -463,7 +501,10 @@ def _compute_SS_blackhole(pt, cache):
         [0,     0,      0,  1/(r*sp.sin(theta))],
     ]
     _teleparallel_path(pt, cache, vierbein_m, vierbein_i, _spherical_spin_connection(pt, theta))
-    cache.live_symbols['spatial_vector'] = [0, 1 / sp.sqrt(lam_bh), 0, 0]
+    if direct_f is not None:
+        cache.live_symbols['spatial_vector'] = [0, sp.sqrt(direct_f), 0, 0]
+    else:
+        cache.live_symbols['spatial_vector'] = [0, 1 / sp.sqrt(lam_bh), 0, 0]
 
 
 # ─── Cache management ─────────────────────────────────────────────────────────

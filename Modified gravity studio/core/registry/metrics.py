@@ -32,6 +32,8 @@ class MetricContext:
     has_vierbein: bool = True
     curvature_k: Any = 0
     metric_tensor: Any = None
+    background_id: str = ''
+    theory: str = ''
 
 
 
@@ -174,7 +176,7 @@ def create_SS_blackhole() -> MetricContext:
     ctx.coord_index = {'t': 0, 'r': 1, 'theta': 2, 'phi': 3}
     ctx.independent_coord_name = 'r'
     ctx.metric_fn_names = ['nu_bh', 'lam_bh']
-    ctx.metric_string = 'ds2 = -nu_bh*dt**2 + lam_bh*dr**2 + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2'
+    ctx.metric_string = 'ds2 = -F(r)*dt**2 + dr**2/F(r) + r**2*dtheta**2 + r**2*sin(theta)**2*dphi**2'
     ctx.spatial_vector_contravariant = None
     ctx.canonical_index_pairs = {
         'vacuum':        [('t', 't')],
@@ -215,7 +217,7 @@ BACKGROUND_METRIC_LATEX = {
     'Bianchi_III':      r'ds^2 = -dt^2 + A(t)^2\,dx^2 + e^{2x}B(t)^2\!\left(dy^2 + dz^2\right)',
     'Kantowski_Sachs':  r'ds^2 = -dt^2 + A(t)^2\,dr^2 + B(t)^2\!\left(d\theta^2 + \sin^2\!\theta\,d\phi^2\right)',
     'SS_wormhole':      r'ds^2 = -e^{2\Phi(r)}\,dt^2 + \frac{dr^2}{1-b(r)/r} + r^2\,d\Omega^2',
-    'SS_blackhole':     r'ds^2 = -\nu_{bh}(r)\,dt^2 + \lambda_{bh}(r)\,dr^2 + r^2\,d\Omega^2',
+    'SS_blackhole':     r'ds^2 = -F(r)\,dt^2 + \frac{dr^2}{F(r)} + r^2\,d\Omega^2',
 }
 
 THEORY_BACKGROUNDS = {
@@ -284,9 +286,8 @@ BACKGROUND_SYMMETRY_GROUP = {
         'geometry_class':   'Static spherically symmetric (Schwarzschild / Reissner-Nordstrom)',
         'Killing_vectors':  4,
         'spatial_symmetry': r'SO(3)',
-        'notes': 'Static spherical black-hole metric in direct coefficient form using independent '
-                 'functions nu_bh(r), lam_bh(r). Fixed Schwarzschild and charged Reissner-Nordstrom '
-                 'presets are provided.',
+        'notes': 'Static spherical black-hole metric in standard direct form. Schwarzschild uses '
+                 'F(r)=1-2M/r and Reissner-Nordstrom uses F(r)=1-2M/r+Q^2/r^2.',
         'lie_algebra':      'r ⊕ so(3)',
     },
 }
@@ -383,5 +384,8 @@ def get_metric_context(background_id: str, curvature_k: int = 0) -> MetricContex
     if background_id not in METRIC_REGISTRY:
         raise ValueError(f"Unknown background: {background_id}")
     if background_id == 'FRW':
-        return METRIC_REGISTRY[background_id](curvature_k)
-    return METRIC_REGISTRY[background_id]()
+        ctx = METRIC_REGISTRY[background_id](curvature_k)
+    else:
+        ctx = METRIC_REGISTRY[background_id]()
+    ctx.background_id = background_id
+    return ctx

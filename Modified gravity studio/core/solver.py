@@ -1448,6 +1448,78 @@ def _ansatz_result_simplify(expr: sp.Expr) -> sp.Expr:
         return expr
 
 
+def _blackhole_post_ansatz_cleanup(expr: sp.Expr) -> sp.Expr:
+    """Cheap radial cleanup for hard static black-hole model outputs.
+
+    Logarithmic f(Q,C) and similar static spherical models can create very large
+    rational-transcendental expressions after substituting nu_bh(r), lam_bh(r).
+    Whole numerator/denominator cleanup is then slower than the field equation
+    assembly itself.  This keeps the expression exact but limits cleanup to
+    local power/sign normalization and small pieces.
+    """
+    if expr is None:
+        return None
+    try:
+        expr = physical_domain_simplify(sp.sympify(expr))
+        ops = sp.count_ops(expr)
+        expr = sp.powsimp(expr, force=True)
+        if ops <= 400:
+            return _common_factor_cleanup(rational_transcendental_simplify(expr))
+        if ops <= 1200:
+            return _common_factor_cleanup(bounded_fraction_cleanup(expr))
+        if isinstance(expr, sp.Add):
+            cleaned_terms = []
+            for term in expr.args:
+                try:
+                    term_ops = sp.count_ops(term)
+                    term = sp.powsimp(term, force=True)
+                    if term_ops <= 350:
+                        term = sp.cancel(term)
+                    if term_ops <= 800:
+                        term = sp.factor_terms(term)
+                except Exception:
+                    pass
+                cleaned_terms.append(term)
+            return physical_domain_simplify(sp.Add(*cleaned_terms, evaluate=False))
+        return physical_domain_simplify(expr)
+    except Exception:
+        return expr
+
+
+def _evaluate_derivative_atoms_locally(expr: sp.Expr) -> sp.Expr:
+    """Evaluate derivative atoms one at a time instead of calling doit globally."""
+    if expr is None:
+        return None
+    try:
+        derivatives = sorted(
+            expr.atoms(sp.Derivative),
+            key=lambda item: (-sp.count_ops(item), str(item)),
+        )
+    except Exception:
+        derivatives = []
+    if not derivatives:
+        return expr
+
+    replacements = {}
+    for deriv in derivatives:
+        try:
+            value = deriv.doit()
+            value_ops = sp.count_ops(value)
+            value = sp.powsimp(value, force=True)
+            if value_ops <= 350:
+                value = sp.cancel(value)
+            replacements[deriv] = value
+        except Exception:
+            continue
+
+    if not replacements:
+        return expr
+    try:
+        return expr.xreplace(replacements)
+    except Exception:
+        return expr.subs(replacements, simultaneous=True)
+
+
 def _build_transcendental_subs(expr: sp.Expr, max_blocks: int = 24):
     """Replace repeated large transcendental atoms by dummies during cleanup."""
     trans_funcs = (
@@ -1555,7 +1627,15 @@ class FieldEquationSolver:
                     _solver_log(f"[SOLVE_COMPONENT] coupled solution for {sym}")
                     return None
 
-                if _is_heavy_transcendental_expr(sol, ops_limit=900):
+                if (
+                    getattr(self.ctx, 'background_id', '') == 'SS_blackhole'
+                    and getattr(self.ctx, 'theory', '') in {'fQ', 'fQC'}
+                ):
+                    # Static black-hole nonmetricity components collapse only
+                    # after nu_bh/lam_bh are substituted.  Cleaning the generic
+                    # isolated solution here can dominate the full run.
+                    solutions[sym] = sol
+                elif _is_heavy_transcendental_expr(sol, ops_limit=900):
                     # For hard f(Q)/f(Q,C) static backgrounds the raw isolated
                     # component can still contain unevaluated metric functions.
                     # Cleaning that form before ansatz substitution is far more
@@ -2006,6 +2086,10 @@ class FieldEquationSolver:
         for sym, expr in solutions.items():
             print(f"[SOLVER] Processing {sym}", flush=True)
             heavy_expr = _is_heavy_transcendental_expr(expr)
+            blackhole_fast = (
+                getattr(self.ctx, 'background_id', '') == 'SS_blackhole'
+                and getattr(self.ctx, 'theory', '') in {'fQ', 'fQC'}
+            )
             if progress_callback:
                 progress_callback(sym, 'substitution')
             _solver_log_ops("[SOLVER] Before subs ops", expr)
@@ -2040,7 +2124,10 @@ class FieldEquationSolver:
             # Evaluate any remaining unevaluated derivatives only when needed.
             if progress_callback:
                 progress_callback(sym, 'derivatives' if remaining_derivs else 'cleanup')
-            evaluated = substituted.doit()
+            if blackhole_fast and remaining_derivs:
+                evaluated = _evaluate_derivative_atoms_locally(substituted)
+            else:
+                evaluated = substituted.doit()
             if not (heavy_expr or _is_heavy_transcendental_expr(evaluated)):
                 evaluated = physical_domain_simplify(evaluated)
             _solver_log_ops("[SOLVER] After doit ops", evaluated)
@@ -2060,7 +2147,10 @@ class FieldEquationSolver:
             # Simplify
             if progress_callback:
                 progress_callback(sym, 'simplification')
-            simplified = _ansatz_result_simplify(evaluated)
+            if blackhole_fast and _is_heavy_transcendental_expr(evaluated, ops_limit=900):
+                simplified = _blackhole_post_ansatz_cleanup(evaluated)
+            else:
+                simplified = _ansatz_result_simplify(evaluated)
             _solver_log_ops("[SOLVER] After simplify ops", simplified)
             final[sym] = simplified
             
